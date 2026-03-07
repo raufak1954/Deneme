@@ -1,0 +1,27 @@
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<div style="width: 80%; margin: auto;">
+    <canvas id="myChart"></canvas>
+</div>
+
+<script>
+    const ctx = document.getElementById('myChart').getContext('2d');
+    const myChart = new Chart(ctx, {
+        type: 'line', // Çizgi grafiği
+        data: {
+            labels: ['0', '10', '20', '30', '40', '50'], // X ekseni (Örn: Yük)
+            datasets: [{
+                label: 'Sehim (mm)', 
+                data: [0, 2, 5, 9, 14, 20], // Y ekseni (Örn: Çökme)
+                borderColor: 'blue',
+                fill: false
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                title: { display: true, text: 'Yük - Sehim Grafiği' }
+            }
+        }
+    });
+</script>
