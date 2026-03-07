@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Çelik Profil Kütüphanesi</title>
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; background-color: #f0f2f5; padding: 20px; display: flex; justify-content: center; }
+        .container { background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); width: 100%; max-width: 400px; }
+        h2 { color: #1a73e8; text-align: center; }
+        select, .result-box { width: 100%; padding: 12px; margin-top: 10px; border-radius: 8px; border: 1px solid #ddd; font-size: 16px; }
+        .data-row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px transition: background 0.3s; }
+        .label { font-weight: bold; color: #555; }
+        .value { color: #000; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>HE Profil Cetveli</h2>
+    <label>Profil Seçiniz:</label>
+    <select id="profilSec" onchange="goster()">
+        <option value="">-- Seçiniz --</option>
+        <option value="HEA100">HEA 100</option>
+        <option value="HEA200">HEA 200</option>
+        <option value="HEB100">HEB 100</option>
+        <option value="HEB200">HEB 200</option>
+    </select>
+
+    <div id="sonuclar" style="margin-top: 20px; display: none;">
+        <div class="data-row"><span class="label">Yükseklik (h):</span> <span id="h" class="value">-</span> mm</div>
+        <div class="data-row"><span class="label">Genişlik (b):</span> <span id="b" class="value">-</span> mm</div>
+        <div class="data-row"><span class="label">Alan (A):</span> <span id="A" class="value">-</span> cm²</div>
+        <div class="data-row"><span class="label">Atalet (Ix):</span> <span id="Ix" class="value">-</span> cm⁴</div>
+        <div class="data-row"><span class="label">Ağırlık (G):</span> <span id="G" class="value">-</span> kg/m</div>
+    </div>
+</div>
+
+<script>
+    const data = {
+        "HEA100": { h: 96, b: 100, A: 21.2, Ix: 349, G: 16.7 },
+        "HEA200": { h: 190, b: 200, A: 53.8, Ix: 3692, G: 42.3 },
+        "HEB100": { h: 100, b: 100, A: 26.0, Ix: 450, G: 20.4 },
+        "HEB200": { h: 200, b: 200, A: 78.1, Ix: 5696, G: 61.3 }
+    };
+
+    function goster() {
+        const secilen = document.getElementById("profilSec").value;
+        const panel = document.getElementById("sonuclar");
+        if (secilen) {
+            panel.style.display = "block";
+            document.getElementById("h").innerText = data[secilen].h;
+            document.getElementById("b").innerText = data[secilen].b;
+            document.getElementById("A").innerText = data[secilen].A;
+            document.getElementById("Ix").innerText = data[secilen].Ix;
+            document.getElementById("G").innerText = data[secilen].G;
+        } else {
+            panel.style.display = "none";
+        }
+    }
+</script>
+
+</body>
+</html>
