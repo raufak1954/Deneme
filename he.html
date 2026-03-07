@@ -1,0 +1,25 @@
+<select id="profilSec" onchange="degerleriGetir()">
+  <option value="">Profil Seçiniz...</option>
+  <option value="HE200B">HE 200 B</option>
+  <option value="HE300B">HE 300 B</option>
+</select>
+
+<div id="profilDetay">
+  <p>Alan (A): <span id="alan">-</span> cm²</p>
+  <p>Atalet Momenti (Ix): <span id="ix">-</span> cm⁴</p>
+</div>
+
+<script>
+  const profiller = {
+    "HE200B": { alan: 78.1, ix: 5696 },
+    "HE300B": { alan: 149, ix: 25170 }
+  };
+
+  function degerleriGetir() {
+    const secilen = document.getElementById("profilSec").value;
+    if(secilen) {
+        document.getElementById("alan").innerText = profiller[secilen].alan;
+        document.getElementById("ix").innerText = profiller[secilen].ix;
+    }
+  }
+</script>
