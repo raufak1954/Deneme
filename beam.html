@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <title>Kiriş Analizörü & Profil Seçici</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #eceff1; padding: 20px; display: flex; justify-content: center; }
+        .card { background: white; padding: 25px; border-radius: 15px; box-shadow: 0 8px 25px rgba(0,0,0,0.15); width: 450px; }
+        h2 { color: #2c3e50; text-align: center; margin-bottom: 25px; border-bottom: 2px solid #3498db; padding-bottom: 10px; }
+        .input-group { margin-bottom: 12px; }
+        label { display: block; margin-bottom: 5px; font-weight: bold; color: #34495e; font-size: 0.9em; }
+        input { width: 100%; padding: 10px; border: 1px solid #bdc3c7; border-radius: 8px; box-sizing: border-box; transition: 0.3s; }
+        input:focus { border-color: #3498db; outline: none; box-shadow: 0 0 5px rgba(52,152,219,0.3); }
+        .results { margin-top: 20px; padding: 15px; background: #f8f9fa; border-radius: 10px; border-left: 5px solid #3498db; }
+        .res-item { display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 1em; color: #2c3e50; }
+        .val { font-weight: bold; color: #2980b9; }
+        .recommendation { margin-top: 20px; text-align: center; padding: 15px; background: #27ae60; color: white; border-radius: 10px; }
+        .rec-title { font-size: 0.8em; text-transform: uppercase; opacity: 0.9; }
+        .rec-value { font-size: 1.5em; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+<div class="card">
+    <h2>Kiriş & Profil Analizi</h2>
+    
+    <div class="input-group">
+        <label>Kiriş Açıklığı (L) - m</label>
+        <input type="number" id="L" value="5" step="0.1" oninput="hesapla()">
+    </div>
+    <div class="input-group">
+        <label>Üniform Yük (w) - kN/m</label>
+        <input type="number" id="w" value="12" step="0.5" oninput="hesapla()">
+    </div>
+    <div class="input-group">
+        <label>Sehim Sınırı (L/...) - Örn: 300</label>
+        <input type="number" id="delta_payda" value="300" oninput="hesapla()">
+    </div>
+    <div class="input-group">
+        <label>Akma Sınırı (fy) - N/mm²</label>
+        <input type="number" id="fy" value="235" oninput="hesapla()">
+    </div>
+
+    <div class="results">
+        <div class="res-item">Gerekli Wx: <span class="val" id="wx">0</span> cm³</div>
+        <div class="res-item">Gerekli Ix: <span class="val" id="ix">0</span> cm⁴</div>
+        <div class="res-item">Min. Kesit Alanı (Tahmin): <span class="val" id="area">0</span> cm²</div>
+    </div>
+
+    <div class="recommendation">
+        <div class="rec-title">Önerilen En Hafif Profil</div>
+        <div class="rec-value" id="profil_adi">-</div>
+    </div>
+</div>
+
+<script>
+// IPE Profil Tablosu (Ad, Ix[cm4], Wx[cm3], Alan[cm2], h[mm])
+const ipeTablosu = [
+    {ad: "IPE 80",  ix: 80.1,  wx: 20,    area: 7.64,  h: 80},
+    {ad: "IPE 100", ix: 171,   wx: 34.2,  area: 10.3,  h: 100},
+    {ad: "IPE 120", ix: 318,   wx: 53,    area: 13.2,  h: 120},
+    {ad: "IPE 140", ix: 541,   wx: 77.3,  area: 16.4,  h: 140},
+    {ad: "IPE 160", ix: 869,   wx: 109,   area: 20.1,  h: 160},
+    {ad: "IPE 180", ix: 1317,  wx: 146,   area: 23.9,  h: 180},
+    {ad: "IPE 200", ix: 1943,  wx: 194,   area: 28.5,  h: 200},
+    {ad: "IPE 220", ix: 2772,  wx: 252,   area: 33.4,  h: 220},
+    {ad: "IPE 240", ix: 3892,  wx: 324,   area: 39.1,  h: 240},
+    {ad: "IPE 270", ix: 5790,  wx: 429,   area: 45.9,  h: 270},
+    {ad: "IPE 300", ix: 8356,  wx: 557,   area: 53.8,  h: 300},
+    {ad: "IPE 330", ix: 11770, wx: 713,   area: 62.6,  h: 330},
+    {ad: "IPE 360", ix: 16270, wx: 904,   area: 72.7,  h: 360},
+    {ad: "IPE 400", ix: 23130, wx: 1160,  area: 84.5,  h: 400},
+    {ad: "IPE 450", ix: 33740, wx: 1500,  area: 98.8,  h: 450},
+    {ad: "IPE 500", ix: 48200, wx: 1930,  area: 116,   h: 500},
+    {ad: "IPE 550", ix: 67120, wx: 2440,  area: 134,   h: 550},
+    {ad: "IPE 600", ix: 92080, wx: 3070,  area: 156,   h: 600}
+];
+
+function hesapla() {
+    const L_m = parseFloat(document.getElementById('L').value);
+    const L = L_m * 1000;
+    const w = parseFloat(document.getElementById('w').value);
+    const payda = parseFloat(document.getElementById('delta_payda').value);
+    const delta_sinir = L / payda;
+    const fy = parseFloat(document.getElementById('fy').value);
+    const E = 210000;
+
+    const M_max = (w * Math.pow(L, 2)) / 8;
+    const Wx_req = (M_max / fy) / 1000; // cm3
+    const Ix_req = ((5 * w * Math.pow(L, 4)) / (384 * E * delta_sinir)) / 10000; // cm4
+
+    document.getElementById('wx').innerText = Wx_req.toFixed(2);
+    document.getElementById('ix').innerText = Ix_req.toFixed(2);
+    
+    // Alan Tahmini (k=0.12 varsayımı ile)
+    const h_tahmin = (2 * (Ix_req*10000)) / (Wx_req*1000);
+    const a_tahmin = (Ix_req*10000) / (0.12 * Math.pow(h_tahmin, 2));
+    document.getElementById('area').innerText = (a_tahmin / 100).toFixed(2);
+
+    // Profil Seçimi
+    let secilenProfil = "Uygun Profil Bulunamadı";
+    for (let p of ipeTablosu) {
+        if (p.ix >= Ix_req && p.wx >= Wx_req) {
+            secilenProfil = p.ad;
+            break;
+        }
+    }
+    document.getElementById('profil_adi').innerText = secilenProfil;
+}
+
+hesapla();
+</script>
+</body>
+</html>
