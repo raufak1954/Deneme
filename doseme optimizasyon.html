@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Optimum Kiriş Analizi - Rauf</title>
+    <style>
+        body { font-family: -apple-system, sans-serif; background: #121212; color: #e0e0e0; padding: 20px; }
+        .card { background: #1e1e1e; padding: 25px; border-radius: 20px; max-width: 600px; margin: auto; border: 1px solid #444; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+        h2 { color: #f39c12; text-align: center; margin-top:0; border-bottom: 1px solid #333; padding-bottom: 10px; }
+        .input-row { display: flex; gap: 10px; margin-bottom: 15px; flex-wrap: wrap; }
+        .input-group { flex: 1; min-width: 140px; }
+        label { display: block; font-size: 11px; margin-bottom: 5px; color: #bbb; }
+        input, select { width: 100%; padding: 12px; border-radius: 8px; border: 1px solid #333; font-size: 16px; box-sizing: border-box; background: #2c2c2c; color: white; }
+        button { width: 100%; padding: 15px; background: #f39c12; border: none; border-radius: 10px; font-weight: bold; cursor: pointer; color: black; font-size: 16px; margin-top: 10px; transition: 0.3s; }
+        button:hover { background: #e67e22; }
+        .res-card { margin-top: 25px; padding: 20px; background: #252525; border-radius: 12px; border-left: 5px solid #44bd32; display: none; }
+        .best-choice { font-size: 28px; color: #44bd32; font-weight: bold; }
+        .highlight { color: #fbc531; font-weight: bold; }
+        .stats { font-size: 14px; line-height: 1.8; color: #ccc; margin-top: 10px; border-top: 1px solid #333; padding-top: 10px; }
+    </style>
+</head>
+<body>
+
+<div class="card">
+    <h2>🚀 Akıllı Döşeme Optimizasyonu</h2>
+    
+    <div class="input-row">
+        <div class="input-group">
+            <label>Kenar A (m)</label>
+            <input type="number" id="dimA" value="4">
+        </div>
+        <div class="input-group">
+            <label>Kenar B (m)</label>
+            <input type="number" id="dimB" value="6">
+        </div>
+    </div>
+
+    <div class="input-row">
+        <div class="input-group">
+            <label>Çelik Sınıfı (Fy)</label>
+            <select id="fySelect">
+                <option value="2350">S235 (St37)</option>
+                <option value="2750">S275 (St44)</option>
+                <option value="3550">S355 (St52)</option>
+            </select>
+        </div>
+        <div class="input-group">
+            <label>Deplasman Sınırı</label>
+            <select id="defLimit">
+                <option value="200">L / 200 (Endüstriyel)</option>
+                <option value="300" selected>L / 300 (Genel)</option>
+                <option value="360">L / 360 (Hassas/Beton)</option>
+                <option value="500">L / 500 (Konfor)</option>
+            </select>
+        </div>
+    </div>
+
+    <div class="input-group" style="margin-bottom: 15px;">
+        <label>Toplam Yük (Hareketli + Ölü) [kg/m²]</label>
+        <input type="number" id="load" value="500">
+    </div>
+
+    <button onclick="findOptimum()">EN HAFİF SİSTEMİ HESAPLA</button>
+
+    <div id="resBox" class="res-card">
+        <div style="font-size: 12px; color: #aaa;">OPTİMUM ÇÖZÜM:</div>
+        <div id="bestProfile" class="best-choice">IPE ---</div>
+        <div id="unitWeight" style="font-size: 20px; color: #fbc531; font-weight: bold;">-- kg/m²</div>
+        <div id="details" class="stats"></div>
+    </div>
+</div>
+
+<script>
+const ipeLibrary = [
+    {name: "IPE 80",  wx: 20,    ix: 80.1,   weight: 6.0},
+    {name: "IPE 100", wx: 34.2,  ix: 171,    weight: 8.1},
+    {name: "IPE 120", wx: 54.7,  ix: 318,    weight: 10.4},
+    {name: "IPE 140", wx: 77.3,  ix: 541,    weight: 12.9},
+    {name: "IPE 160", wx: 109,   ix: 869,    weight: 15.8},
+    {name: "IPE 180", wx: 146,   ix: 1317,   weight: 18.8},
+    {name: "IPE 200", wx: 194,   ix: 1943,   weight: 22.4},
+    {name: "IPE 220", wx: 252,   ix: 2772,   weight: 26.2},
+    {name: "IPE 240", wx: 324,   ix: 3892,   weight: 30.7},
+    {name: "IPE 270", wx: 429,   ix: 5790,   weight: 36.1},
+    {name: "IPE 300", wx: 557,   ix: 8356,   weight: 42.2}
+];
+
+function findOptimum() {
+    const dimA = parseFloat(document.getElementById('dimA').value);
+    const dimB = parseFloat(document.getElementById('dimB').value);
+    const fy = parseFloat(document.getElementById('fySelect').value);
+    const q = parseFloat(document.getElementById('load').value) / 10000;
+    const limitDivisor = parseFloat(document.getElementById('defLimit').value);
+    
+    const L_cm = Math.min(dimA, dimB) * 100;
+    const Span_m = Math.max(dimA, dimB);
+    const allowSigma = 0.6 * fy;
+    const E = 2100000;
+
+    let bestOption = { weight: Infinity };
+
+    // Optimizasyon Döngüsü: 40cm - 150cm aralıkları tara
+    for (let s = 40; s <= 150; s++) {
+        let loadLine = q * s;
+        let M = (loadLine * L_cm * L_cm) / 8;
+        let reqWx = M / allowSigma;
+        let reqIx = (5 * loadLine * Math.pow(L_cm, 4)) / (384 * E * (L_cm / limitDivisor));
+
+        let profile = ipeLibrary.find(p => p.wx >= reqWx && p.ix >= reqIx);
+        
+        if (profile) {
+            let count = Math.ceil((Span_m * 100) / s) + 1;
+            let totalW = count * (L_cm / 100) * profile.weight;
+            let kgM2 = totalW / (dimA * dimB);
+
+            if (kgM2 < bestOption.weight) {
+                bestOption = { 
+                    weight: kgM2, 
+                    profile: profile.name, 
+                    spacing: s, 
+                    count: count,
+                    wx: reqWx,
+                    ix: reqIx
+                };
+            }
+        }
+    }
+
+    const resBox = document.getElementById('resBox');
+    resBox.style.display = 'block';
+
+    if (bestOption.profile) {
+        document.getElementById('bestProfile').innerText = bestOption.profile;
+        document.getElementById('unitWeight').innerText = bestOption.weight.toFixed(2) + " kg/m²";
+        document.getElementById('details').innerHTML = `
+            • Optimum Aralık: <span class="highlight">${bestOption.spacing} cm</span><br>
+            • Seçilen Yön: <b>${L_cm/100} m (Kısa Yön)</b><br>
+            • Deplasman Sınırı: <b>L/${limitDivisor} (${(L_cm/limitDivisor).toFixed(2)} cm)</b><br>
+            • Toplam Profil Sayısı: <b>${bestOption.count} adet</b>
+        `;
+    } else {
+        document.getElementById('bestProfile').innerText = "Çözüm Yok!";
+        document.getElementById('details').innerText = "Bu yük ve açıklık için kütüphanedeki IPE profilleri yetersiz kalıyor.";
+    }
+}
+</script>
+</body>
+</html>
