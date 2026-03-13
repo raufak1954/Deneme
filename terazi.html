@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Rauf - Dijital Su Terazisi</title>
+    <style>
+        body { 
+            margin: 0; padding: 0; background: #1a1a1a; color: white; 
+            font-family: sans-serif; display: flex; flex-direction: column; 
+            align-items: center; justify-content: center; height: 100vh; overflow: hidden;
+        }
+        
+        /* Terazi Kabı */
+        .container {
+            width: 300px; height: 300px; border: 4px solid #444; 
+            border-radius: 50%; position: relative; background: radial-gradient(#333, #111);
+        }
+
+        /* Merkez Çizgileri */
+        .crosshair {
+            position: absolute; top: 50%; left: 50%; width: 100%; height: 2px;
+            background: rgba(255,255,255,0.1); transform: translate(-50%, -50%);
+        }
+        .crosshair.v { transform: translate(-50%, -50%) rotate(90deg); }
+
+        /* Su Kabarcığı */
+        .bubble {
+            width: 40px; height: 40px; background: #00ff00; 
+            border-radius: 50%; position: absolute; top: 50%; left: 50%;
+            transform: translate(-50%, -50%); box-shadow: 0 0 20px #00ff00;
+            transition: 0.1s ease-out;
+        }
+
+        .data { margin-top: 30px; text-align: center; font-family: monospace; font-size: 20px; }
+        .btn-request { 
+            padding: 15px 30px; background: #007aff; color: white; 
+            border: none; border-radius: 8px; font-size: 18px; cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="requestArea">
+        <button class="btn-request" onclick="startSensors()">SENSÖRLERİ BAŞLAT</button>
+        <p style="font-size: 12px; margin-top: 10px; color: #888;">(iPad izni için gereklidir)</p>
+    </div>
+
+    <div class="container" id="levelContainer" style="display:none;">
+        <div class="crosshair"></div>
+        <div class="crosshair v"></div>
+        <div class="bubble" id="bubble"></div>
+    </div>
+
+    <div class="data" id="dataArea" style="display:none;">
+        X (Eğim): <span id="valX">0</span>° <br>
+        Y (Eğim): <span id="valY">0</span>°
+    </div>
+
+<script>
+    const bubble = document.getElementById('bubble');
+    const valX = document.getElementById('valX');
+    const valY = document.getElementById('valY');
+
+    function startSensors() {
+        // iOS/iPadOS 13+ için sensör izni alma
+        if (typeof DeviceOrientationEvent.requestPermission === 'function') {
+            DeviceOrientationEvent.requestPermission()
+                .then(permissionState => {
+                    if (permissionState === 'granted') {
+                        activate();
+                    }
+                })
+                .catch(console.error);
+        } else {
+            activate(); // Diğer cihazlar için direkt başlat
+        }
+    }
+
+    function activate() {
+        document.getElementById('requestArea').style.display = 'none';
+        document.getElementById('levelContainer').style.display = 'block';
+        document.getElementById('dataArea').style.display = 'block';
+
+        window.addEventListener('deviceorientation', (event) => {
+            // Beta (X ekseni eğimi): -180 ile 180 arası
+            // Gamma (Y ekseni eğimi): -90 ile 90 arası
+            let x = event.beta;  
+            let y = event.gamma; 
+
+            // Değerleri sınırla ve ekrana bas
+            valX.innerText = x.toFixed(1);
+            valY.innerText = y.toFixed(1);
+
+            // Kabarcığı hareket ettir (300px kap içinde max 130px kayma)
+            let moveX = Math.min(Math.max(y, -45), 45) * 3; 
+            let moveY = Math.min(Math.max(x, -45), 45) * 3;
+
+            bubble.style.left = `calc(50% + ${moveX}px)`;
+            bubble.style.top = `calc(50% + ${moveY}px)`;
+
+            // Tam merkezdeyse renk değiştir
+            if (Math.abs(x) < 1 && Math.abs(y) < 1) {
+                bubble.style.background = "#ff0000"; // Tam düzse kırmızı
+                bubble.style.boxShadow = "0 0 30px #ff0000";
+            } else {
+                bubble.style.background = "#00ff00";
+                bubble.style.boxShadow = "0 0 20px #00ff00";
+            }
+        });
+    }
+</script>
+
+</body>
+</html>
