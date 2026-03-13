@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <title>Kiriş Analizörü - Allowable Stress</title>
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; background: #f0f2f5; padding: 20px; display: flex; justify-content: center; }
+        .card { background: white; padding: 25px; border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); width: 450px; }
+        h2 { color: #1a2a3a; text-align: center; margin-bottom: 20px; font-size: 1.4em; border-bottom: 3px solid #e74c3c; padding-bottom: 10px; }
+        .input-group { margin-bottom: 12px; }
+        label { display: block; margin-bottom: 4px; font-weight: bold; color: #444; font-size: 0.85em; }
+        input { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 8px; box-sizing: border-box; font-size: 1em; }
+        .info-box { background: #fff3cd; color: #856404; padding: 10px; border-radius: 8px; font-size: 0.85em; margin-bottom: 15px; text-align: center; border: 1px solid #ffeeba; }
+        .results { margin-top: 20px; padding: 15px; background: #f8f9fa; border-radius: 10px; }
+        .res-item { display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 0.95em; }
+        .val { font-weight: bold; color: #c0392b; }
+        .recommendation { margin-top: 20px; text-align: center; padding: 15px; background: #2980b9; color: white; border-radius: 10px; }
+        .rec-value { font-size: 1.6em; font-weight: bold; display: block; margin-top: 5px; }
+    </style>
+</head>
+<body>
+
+<div class="card">
+    <h2>Kiriş Kesit Analizörü</h2>
+    
+    <div class="info-box">
+        <strong>Emniyet Formatı:</strong> Allowable Stress = 0.60 * f<sub>y</sub>
+    </div>
+
+    <div class="input-group">
+        <label>Kiriş Açıklığı (L) - m</label>
+        <input type="number" id="L" value="5" step="0.1" oninput="hesapla()">
+    </div>
+    <div class="input-group">
+        <label>Üniform Yük (w) - kN/m</label>
+        <input type="number" id="w" value="12" step="0.5" oninput="hesapla()">
+    </div>
+    <div class="input-group">
+        <label>Sehim Sınırı (L/...) - Örn: 300</label>
+        <input type="number" id="delta_payda" value="300" oninput="hesapla()">
+    </div>
+    <div class="input-group">
+        <label>Akma Sınırı (fy) - N/mm²</label>
+        <input type="number" id="fy" value="235" oninput="hesapla()">
+    </div>
+
+    <div class="results">
+        <div class="res-item">Emniyet Gerilmesi (σ<sub>all</sub>): <span class="val" id="sigma_all">0</span> N/mm²</div>
+        <div class="res-item">Gerekli W<sub>x</sub>: <span class="val" id="wx">0</span> cm³</div>
+        <div class="res-item">Gerekli I<sub>x</sub>: <span class="val" id="ix">0</span> cm⁴</div>
+    </div>
+
+    <div class="recommendation">
+        <span style="font-size: 0.8em; opacity: 0.9;">ÖNERİLEN IPE PROFİLİ</span>
+        <span class="rec-value" id="profil_adi">-</span>
+    </div>
+</div>
+
+<script>
+const ipeTablosu = [
+    {ad: "IPE 80",  ix: 80.1,  wx: 20}, {ad: "IPE 100", ix: 171,   wx: 34.2},
+    {ad: "IPE 120", ix: 318,   wx: 53}, {ad: "IPE 140", ix: 541,   wx: 77.3},
+    {ad: "IPE 160", ix: 869,   wx: 109}, {ad: "IPE 180", ix: 1317,  wx: 146},
+    {ad: "IPE 200", ix: 1943,  wx: 194}, {ad: "IPE 220", ix: 2772,  wx: 252},
+    {ad: "IPE 240", ix: 3892,  wx: 324}, {ad: "IPE 270", ix: 5790,  wx: 429},
+    {ad: "IPE 300", ix: 8356,  wx: 557}, {ad: "IPE 330", ix: 11770, wx: 713},
+    {ad: "IPE 360", ix: 16270, wx: 904}, {ad: "IPE 400", ix: 23130, wx: 1160},
+    {ad: "IPE 450", ix: 33740, wx: 1500}, {ad: "IPE 500", ix: 48200, wx: 1930},
+    {ad: "IPE 550", ix: 67120, wx: 2440}, {ad: "IPE 600", ix: 92080, wx: 3070}
+];
+
+function hesapla() {
+    const L_m = parseFloat(document.getElementById('L').value);
+    const L = L_m * 1000;
+    const w = parseFloat(document.getElementById('w').value);
+    const payda = parseFloat(document.getElementById('delta_payda').value);
+    const fy = parseFloat(document.getElementById('fy').value);
+    
+    // Emniyet Gerilmesi Hesabı
+    const sigma_allowable = fy * 0.6;
+    const delta_sinir = L / payda;
+    const E = 210000;
+
+    // Statik Gereksinimler
+    const M_max = (w * Math.pow(L, 2)) / 8;
+    const Wx_req = (M_max / sigma_allowable) / 1000; // cm3
+    const Ix_req = ((5 * w * Math.pow(L, 4)) / (384 * E * delta_sinir)) / 10000; // cm4
+
+    // Ekranı Güncelle
+    document.getElementById('sigma_all').innerText = sigma_allowable.toFixed(1);
+    document.getElementById('wx').innerText = Wx_req.toFixed(2);
+    document.getElementById('ix').innerText = Ix_req.toFixed(2);
+    
+    // Uygun Profil Seç
+    let secilen = "Limit Dışı";
+    for (let p of ipeTablosu) {
+        if (p.ix >= Ix_req && p.wx >= Wx_req) {
+            secilen = p.ad;
+            break;
+        }
+    }
+    document.getElementById('profil_adi').innerText = secilen;
+}
+
+hesapla();
+</script>
+</body>
+</html>
