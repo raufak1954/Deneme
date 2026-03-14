@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Çelik Profil Tablosu</title>
+    <style>
+        body { font-family: Arial, sans-serif; background-color: #f4f4f9; padding: 20px; }
+        .container { max-width: 800px; margin: auto; background: white; padding: 20px; border-radius: 8px; shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        h1 { text-align: center; color: #333; }
+        h2 { background: #007bff; color: white; padding: 10px; border-radius: 4px; margin-top: 20px; }
+        table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background-color: #f2f2f2; }
+        tr:nth-child(even) { background-color: #fafafa; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>Çelik Profil Listesi</h1>
+    <div id="tablo-alani">Veriler yükleniyor...</div>
+</div>
+
+<script>
+    // 1. Kendi GitHub Raw linkini buraya yapıştır
+    const url = 'https://raw.githubusercontent.com/raufak1954/Deneme/refs/heads/main/profiller.json';
+
+    async function verileriGetir() {
+        try {
+            const response = await fetch(url);
+            const data = await response.json();
+            
+            let htmlIcerik = "";
+
+            // 2. JSON içindeki anahtarları (IPE, HEA vb.) tek tek dön
+            for (let tip in data.celik_profiller) {
+                htmlIcerik += `<h2>${tip} Profilleri</h2>`;
+                htmlIcerik += `<table>
+                    <thead>
+                        <tr>
+                            <th>Profil Adı</th>
+                            <th>h (mm)</th>
+                            <th>b (mm)</th>
+                            <th>Ağırlık (kg/m)</th>
+                        </tr>
+                    </thead>
+                    <tbody>`;
+
+                // 3. Her tipin altındaki profilleri tablo satırına dönüştür
+                data.celik_profiller[tip].forEach(profil => {
+                    htmlIcerik += `
+                        <tr>
+                            <td><strong>${profil.ad}</strong></td>
+                            <td>${profil.h}</td>
+                            <td>${profil.b}</td>
+                            <td>${profil.kg_m}</td>
+                        </tr>`;
+                });
+
+                htmlIcerik += `</tbody></table>`;
+            }
+
+            document.getElementById('tablo-alani').innerHTML = htmlIcerik;
+
+        } catch (hata) {
+            console.error("Hata:", hata);
+            document.getElementById('tablo-alani').innerHTML = "Veri yüklenirken bir hata oluştu. Linki kontrol edin.";
+        }
+    }
+
+    // Programı çalıştır
+    verileriGetir();
+</script>
+
+</body>
+</html>
