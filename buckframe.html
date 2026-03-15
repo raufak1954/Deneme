@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Sway Column Buckling Tool - Safe Side</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 20px; background: #f4f4f9; color: #333; }
+        .card { max-width: 800px; margin: auto; background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.1); }
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        .input-box { margin-bottom: 15px; }
+        label { display: block; font-weight: 600; font-size: 0.9em; color: #555; }
+        input, select { width: 100%; padding: 10px; margin-top: 5px; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box; }
+        button { width: 100%; padding: 15px; background: #2c3e50; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 1.1em; font-weight: bold; margin-top: 10px; transition: background 0.3s; }
+        button:hover { background: #34495e; }
+        #output { margin-top: 25px; padding: 20px; background: #2d2d2d; color: #f8f8f2; border-radius: 8px; font-family: 'Consolas', monospace; white-space: pre-wrap; line-height: 1.6; }
+        .highlight { color: #f1c40f; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+<div class="card">
+    <h2>Stability Analysis (Sway Frame)</h2>
+    <p>Constraint: <strong>Symmetric Rafter Stiffness (2EI/L)</strong> - Conservative Approach</p>
+    
+    <div class="grid">
+        <div class="input-box">
+            <label>Column Inertia (I_col) [cm⁴]</label>
+            <input type="number" id="Icol" value="10000">
+        </div>
+        <div class="input-box">
+            <label>Column Length (L_col) [m]</label>
+            <input type="number" id="Lcol" value="4">
+        </div>
+        <div class="input-box">
+            <label>Rafter Inertia (I_raft) [cm⁴]</label>
+            <input type="number" id="Iraft" value="12000">
+        </div>
+        <div class="input-box">
+            <label>Rafter Length (L_raft) [m]</label>
+            <input type="number" id="Lraft" value="6">
+        </div>
+        <div class="input-box">
+            <label>Base Boundary Condition</label>
+            <select id="baseType">
+                <option value="fixed">Fixed (G = 0.1)</option>
+                <option value="pinned">Pinned (G = 10.0)</option>
+            </select>
+        </div>
+        <div class="input-box">
+            <label>Steel Modulus (E) [GPa]</label>
+            <input type="number" id="E" value="210">
+        </div>
+    </div>
+
+    <button onclick="calculateStability()">Run Stability Analysis</button>
+
+    <div id="output">Run analysis to see results...</div>
+</div>
+
+<script>
+function calculateStability() {
+    const E = parseFloat(document.getElementById('E').value) * 1e6; 
+    const Icol = parseFloat(document.getElementById('Icol').value) * 1e-8; 
+    const Lcol = parseFloat(document.getElementById('Lcol').value);
+    const Iraft = parseFloat(document.getElementById('Iraft').value) * 1e-8; 
+    const Lraft = parseFloat(document.getElementById('Lraft').value);
+    const baseFixed = document.getElementById('baseType').value === 'fixed';
+
+    const EI_col = E * Icol;
+    const EI_raft = E * Iraft;
+
+    // Symmetric Rafter Stiffness: k_theta = 2 * EI / L
+    const k_theta = (2 * EI_raft) / Lraft;
+
+    // Calculate G factors
+    // G = Sum(EI/L_cols) / Sum(Equivalent_Rafter_Stiffness)
+    // Note: Standard nomogram uses Sum(EI/L_beams). For 2EI/L stiffness, 
+    // we adjust the denominator to reflect the symmetric bending restraint.
+    const G_top = (EI_col / Lcol) / (k_theta / 2); 
+    const G_base = baseFixed ? 0.1 : 10.0;
+
+    // Solving the Transcendental Equation for Sway K-Factor
+    // Formula: (Ga*Gb*(pi/K)^2 - 36) / (6*(Ga+Gb)) = (pi/K) / tan(pi/K)
+    let finalK = 2.0;
+    let minDiff = Infinity;
+
+    for (let k_test = 1.001; k_test < 25.0; k_test += 0.001) {
+        let x = Math.PI / k_test;
+        let lhs = (G_top * G_base * x * x - 36) / (6 * (G_top + G_base));
+        let rhs = x / Math.tan(x);
+        let diff = Math.abs(lhs - rhs);
+        
+        if (diff < minDiff) {
+            minDiff = diff;
+            finalK = k_test;
+        }
+    }
+
+    const Pcr = (Math.PI**2 * EI_col) / Math.pow(finalK * Lcol, 2);
+    const Le = finalK * Lcol;
+
+    document.getElementById('output').innerHTML = 
+        `--- Stability Parameters ---\n` +
+        `Rotational Stiffness (kθ): ${k_theta.toFixed(2)} kNm/rad\n` +
+        `G_top (Joint Stiffness Ratio): ${G_top.toFixed(4)}\n` +
+        `G_base (Support Ratio): ${G_base.toFixed(1)}\n\n` +
+        `--- Buckling Results ---\n` +
+        `Effective Length Factor (K): <span class="highlight">${finalK.toFixed(3)}</span>\n` +
+        `Effective Length (Le): ${Le.toFixed(3)} m\n` +
+        `Critical Axial Load (Pcr): <span class="highlight">${Pcr.toFixed(2)} kN</span>\n\n` +
+        `Note: Using 2EI/L assumes symmetric rafter bending (Conservative).`;
+}
+</script>
+</body>
+</html>
