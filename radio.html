@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rauf'un Dijital Radyosu</title>
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; background: #1a1a1a; color: white; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; margin: 0; }
+        .radio-container { background: #333; padding: 30px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); text-align: center; width: 300px; }
+        .display { background: #222; padding: 20px; border-radius: 10px; margin-bottom: 20px; border: 2px solid #444; color: #00ff00; font-family: monospace; font-size: 1.2em; }
+        select { width: 100%; padding: 10px; background: #444; color: white; border: none; border-radius: 5px; margin-bottom: 20px; }
+        .controls button { padding: 15px 25px; font-size: 18px; border-radius: 50px; border: none; cursor: pointer; transition: 0.3s; }
+        .play { background: #28a745; color: white; }
+        .stop { background: #dc3545; color: white; margin-left: 10px; }
+        button:hover { opacity: 0.8; }
+    </style>
+</head>
+<body>
+
+    <div class="radio-container">
+        <h2>FM RADYO</h2>
+        <div class="display" id="station-name">İstasyon Seçiniz</div>
+        
+        <select id="station-select" onchange="updateStation()">
+            <option value="">-- Kanal Seç --</option>
+            <option value="https://radyo.trt.net.tr/trtfm.mp3">TRT FM</option>
+            <option value="https://fenomen.listenfenomen.com/fenomen/128/icecast.audio">Radyo Fenomen</option>
+            <option value="https://n10101.cdn.net.tr/joyfm">Joy FM</option>
+            <option value="http://46.20.3.204/;stream.mp3">Kral FM</option>
+        </select>
+
+        <div class="controls">
+            <button class="play" onclick="playRadio()">Oynat</button>
+            <button class="stop" onclick="stopRadio()">Durdur</button>
+        </div>
+    </div>
+
+    <audio id="radio-player"></audio>
+
+    <script>
+        const player = document.getElementById('radio-player');
+        const display = document.getElementById('station-name');
+        const selector = document.getElementById('station-select');
+
+        function updateStation() {
+            player.src = selector.value;
+            display.innerText = selector.options[selector.selectedIndex].text;
+        }
+
+        function playRadio() {
+            if (player.src) {
+                player.play();
+                display.style.color = "#00ff00";
+            } else {
+                alert("Lütfen önce bir kanal seçin.");
+            }
+        }
+
+        function stopRadio() {
+            player.pause();
+            display.style.color = "#ff0000";
+        }
+    </script>
+</body>
+</html>
