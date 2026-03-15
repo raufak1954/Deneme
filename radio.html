@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rauf'un Radyosu</title>
+    <style>
+        body { font-family: sans-serif; background: #121212; color: white; text-align: center; padding: 50px 20px; }
+        .player-card { background: #1e1e1e; padding: 40px; border-radius: 30px; box-shadow: 0 15px 35px rgba(0,0,0,0.7); max-width: 400px; margin: 0 auto; }
+        select { width: 100%; padding: 15px; border-radius: 10px; background: #333; color: white; border: 1px solid #444; font-size: 18px; margin-bottom: 30px; }
+        .btn { padding: 20px 40px; font-size: 20px; border-radius: 50px; border: none; cursor: pointer; font-weight: bold; width: 100%; transition: 0.3s; }
+        .play { background: #1db954; color: white; margin-bottom: 15px; }
+        .stop { background: #b91d1d; color: white; }
+        #status { margin-top: 20px; color: #1db954; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+    <div class="player-card">
+        <h2>Dijital FM</h2>
+        
+        <select id="kanalSecici">
+            <option value="">-- Bir Kanal Seçin --</option>
+            <option value="https://radyo.trt.net.tr/trtfm.mp3">TRT FM</option>
+            <option value="https://shoutcast.radyoland.com/virgin_radio.mp3">Virgin Radio</option>
+            <option value="https://shoutcast.radyoland.com/joyfm.mp3">Joy FM</option>
+            <option value="https://shoutcast.radyoland.com/metrofm.mp3">Metro FM</option>
+        </select>
+
+        <button class="btn play" onclick="cal()">Oynat</button>
+        <button class="btn stop" onclick="dur()">Durdur</button>
+
+        <p id="status">Hazır</p>
+    </div>
+
+    <audio id="radyoObjesi"></audio>
+
+    <script>
+        const radyo = document.getElementById('radyoObjesi');
+        const secici = document.getElementById('kanalSecici');
+        const durum = document.getElementById('status');
+
+        function cal() {
+            const url = secici.value;
+            if (!url) {
+                alert("Lütfen önce bir kanal seçin!");
+                return;
+            }
+
+            // Önce kaynağı yükle
+            radyo.src = url;
+            durum.innerText = "Yükleniyor...";
+            durum.style.color = "#ffcc00";
+
+            // Oynatmayı dene
+            radyo.play()
+                .then(() => {
+                    durum.innerText = "Şu an çalıyor: " + secici.options[secici.selectedIndex].text;
+                    durum.style.color = "#1db954";
+                })
+                .catch(error => {
+                    durum.innerText = "Bağlantı hatası!";
+                    durum.style.color = "#ff0000";
+                    console.log("Hata:", error);
+                });
+        }
+
+        function dur() {
+            radyo.pause();
+            radyo.src = ""; // Yayını tamamen kes
+            durum.innerText = "Durduruldu";
+            durum.style.color = "#ffffff";
+        }
+    </script>
+</body>
+</html>
