@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Slab Analysis - A4 Vertical</title>
+    <style>
+        body { 
+            font-family: 'Segoe UI', Arial, sans-serif; 
+            background: #d1d1d1; 
+            margin: 0; 
+            padding: 10px; 
+            display: flex; 
+            justify-content: center;
+        }
+        .a4-page { 
+            width: 210mm; 
+            height: 297mm; 
+            background: #fff; 
+            padding: 15mm; 
+            box-shadow: 0 0 10px rgba(0,0,0,0.3); 
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+        }
+        h2 { text-align: center; color: #2c3e50; font-weight: bold; font-size: 24px; margin: 0 0 15px 0; border-bottom: 3px solid #2c3e50; }
+        .visual-box { text-align: center; border: 2px solid #333; padding: 10px; margin-bottom: 15px; background: #fafafa; }
+        .edge-text { font-size: 20px; font-weight: bold; }
+        .ss-color { fill: #d9534f; }
+        .f-color { fill: #28a745; }
+        .section-title { font-weight: bold; font-size: 18px; margin-bottom: 10px; display: block; background: #eee; padding: 5px 10px; border-left: 5px solid #2c3e50; }
+        .inputs { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; font-weight: bold; margin-bottom: 15px; }
+        label { display: block; margin-bottom: 4px; font-size: 17px; }
+        input { width: 100%; padding: 10px; border: 2px solid #333; font-size: 18px; font-weight: bold; border-radius: 4px; }
+        button { background: #2c3e50; color: white; padding: 18px; border: none; cursor: pointer; width: 100%; font-size: 22px; font-weight: bold; margin-top: 10px; }
+        .result { margin-top: 20px; padding: 20px; background: #f8f9fa; border: 3px solid #2c3e50; font-size: 24px; font-weight: bold; text-align: center; }
+        .res-val { color: #d9534f; font-size: 28px; }
+    </style>
+</head>
+<body onload="initReinforcement()">
+
+<div class="a4-page">
+    <h2>SLAB CAPACITY ANALYSIS</h2>
+
+    <div class="visual-box">
+        <svg width="100%" height="180" viewBox="0 0 350 200">
+            <rect x="75" y="40" width="200" height="120" fill="#fff" stroke="#000" stroke-width="3" />
+            <text x="175" y="30" id="label_top" class="edge-text ss-color" text-anchor="middle">SS</text>
+            <text x="175" y="185" id="label_bottom" class="edge-text ss-color" text-anchor="middle">SS</text>
+            <text x="45" y="105" id="label_left" class="edge-text ss-color" text-anchor="middle">SS</text>
+            <text x="305" y="105" id="label_right" class="edge-text ss-color" text-anchor="middle">SS</text>
+        </svg>
+    </div>
+
+    <div class="section-title">Support Conditions</div>
+    <div style="margin-bottom: 15px;">
+        <input type="checkbox" id="check_top" onchange="toggleLabel('top')"> Top
+        <input type="checkbox" id="check_bottom" onchange="toggleLabel('bottom')"> Bottom
+        <input type="checkbox" id="check_left" onchange="toggleLabel('left')"> Left
+        <input type="checkbox" id="check_right" onchange="toggleLabel('right')"> Right
+    </div>
+
+    <span class="section-title">Geometry & Steel (0.15% Init)</span>
+    <div class="inputs">
+        <div><label>Short Span (a) [m]</label><input type="number" id="val_a" value="4"></div>
+        <div><label>Long Span (L) [m]</label><input type="number" id="val_L" value="6"></div>
+        <div><label>Eff. Depth (d) [mm]</label><input type="number" id="val_d" value="120" onchange="initReinforcement()"></div>
+        <div><label>Steel Yield (fy) [MPa]</label><input type="number" id="val_fy" value="420"></div>
+        <div><label>Asx [cm2/m]</label><input type="number" id="val_asx" step="0.01"></div>
+        <div><label>Asy [cm2/m]</label><input type="number" id="val_asy" step="0.01"></div>
+    </div>
+
+    <button onclick="run()">CALCULATE CAPACITY</button>
+
+    <div class="result">
+        <div>Ultimate Load: <span id="res_u" class="res-val">-</span> kN/m2</div>
+        <div>Safe Load (SF 2.5): <span id="res_a" class="res-val">-</span> kN/m2</div>
+    </div>
+</div>
+
+<script>
+    function initReinforcement() {
+        const d = parseFloat(document.getElementById('val_d').value);
+        const h = d + 30; // Assuming 30mm cover/radius for gross height
+        const minAs = (0.15 / 100) * (100 * (h / 10)); // Convert mm to cm for cm2/m
+        document.getElementById('val_asx').value = minAs.toFixed(2);
+        document.getElementById('val_asy').value = minAs.toFixed(2);
+    }
+
+    function toggleLabel(pos) {
+        const isChecked = document.getElementById('check_' + pos).checked;
+        const el = document.getElementById('label_' + pos);
+        el.textContent = isChecked ? "F" : "SS";
+        el.setAttribute("class", "edge-text " + (isChecked ? "f-color" : "ss-color"));
+    }
+
+    function run() {
+        const a = parseFloat(document.getElementById('val_a').value);
+        const L = parseFloat(document.getElementById('val_L').value);
+        const d = parseFloat(document.getElementById('val_d').value);
+        const asx = parseFloat(document.getElementById('val_asx').value);
+        const asy = parseFloat(document.getElementById('val_asy').value);
+        const fy = parseFloat(document.getElementById('val_fy').value);
+        
+        const mx = (asx * 100) * fy * (d * 0.9) * 1e-6;
+        const my = (asy * 100) * fy * (d * 0.9) * 1e-6;
+
+        const ratio = (a / L) * Math.sqrt(my / mx);
+        const factor = Math.pow(Math.sqrt(3 + Math.pow(ratio, 2)) - ratio, 2);
+        const w_ult = (24 * mx) / (Math.pow(a, 2) * factor);
+
+        document.getElementById('res_u').innerText = w_ult.toFixed(2);
+        document.getElementById('res_a').innerText = (w_ult / 2.5).toFixed(2);
+    }
+</script>
+</body>
+</html>
