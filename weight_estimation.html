@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>St 37 Warehouse Weight Calculator</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 20px; background-color: #f0f2f5; color: #333; }
+        .container { max-width: 650px; background: #fff; padding: 30px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); margin: auto; }
+        h2 { color: #0056b3; border-bottom: 2px solid #eee; padding-bottom: 10px; }
+        .input-group { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 5px; font-weight: 600; font-size: 0.9em; }
+        input { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 6px; box-sizing: border-box; }
+        button { background: #0056b3; color: white; border: none; padding: 12px; border-radius: 6px; cursor: pointer; width: 100%; font-size: 16px; font-weight: bold; transition: 0.3s; }
+        button:hover { background: #004494; }
+        #result { margin-top: 25px; padding: 20px; background: #eef7ff; border-left: 6px solid #0056b3; display: none; border-radius: 4px; }
+        .section-title { font-weight: bold; color: #0056b3; margin-top: 20px; text-decoration: underline; }
+        ul { padding-left: 20px; font-size: 0.85em; color: #555; }
+        li { margin-bottom: 5px; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>Warehouse Steel Estimator</h2>
+    
+    <div class="input-group">
+        <label>Individual Span Width (m):</label>
+        <input type="number" id="span" value="24" min="10" max="30">
+    </div>
+
+    <div class="input-group">
+        <label>Number of Spans (Side-by-side):</label>
+        <input type="number" id="numSpans" value="1" min="1" max="5">
+    </div>
+
+    <div class="input-group">
+        <label>Total Building Length (m):</label>
+        <input type="number" id="length" value="60">
+    </div>
+
+    <div class="input-group">
+        <label>Design Snow Load (kg/m²):</label>
+        <input type="number" id="snow" value="75">
+    </div>
+
+    <button onclick="calculateWeight()">Calculate Total Tonnage</button>
+
+    <div id="result">
+        <div style="font-size: 1.1em; margin-bottom: 10px;"><strong>Results (St 37 Steel):</strong></div>
+        <div id="unitWeight"></div>
+        <div id="totalWeight" style="font-size: 1.2em; color: #d9534f; font-weight: bold; margin-top: 10px;"></div>
+    </div>
+
+    <div class="section-title">Technical Assumptions</div>
+    <ul>
+        <li><strong>Material:</strong> Structural Steel Grade St 37 (S235 JR).</li>
+        <li><strong>Bay Spacing:</strong> Calculated based on 6-meter intervals.</li>
+        <li><strong>Height:</strong> Eave height of 4 to 6 meters.</li>
+        <li><strong>Structural System:</strong> Built-up tapered/I-sections for main frames; Cold-formed Z/C purlins for secondary steel.</li>
+        <li><strong>Allowances:</strong> Includes 15% for connections (plates, bolts, stiffeners) and ~3-4 kg/m² for roof/wall bracing.</li>
+    </ul>
+
+    <div class="section-title">Limitations</div>
+    <ul>
+        <li><strong>No Cranes:</strong> Calculation assumes no overhead crane loads or heavy mezzanine levels.</li>
+        <li><strong>Standard Wind:</strong> Assumes non-cyclonic/standard wind zones.</li>
+        <li><strong>Soil Conditions:</strong> Does not include weight of steel reinforcement for foundations.</li>
+        <li><strong>Seismic:</strong> High seismic zones may require additional bracing weight not covered here.</li>
+        <li><strong>Cladding:</strong> Weight of sandwich panels or sheets is NOT included in the steel tonnage.</li>
+    </ul>
+</div>
+
+<script>
+    function calculateWeight() {
+        const L = parseFloat(document.getElementById('span').value);
+        const N = parseFloat(document.getElementById('numSpans').value);
+        const B = parseFloat(document.getElementById('length').value);
+        const S = parseFloat(document.getElementById('snow').value);
+        
+        if (!L || !N || !B || !S) {
+            alert("Please provide valid inputs.");
+            return;
+        }
+
+        // Frame Weight Logic (kg/m2)
+        // Base curve for St 37 at 75kg snow load
+        let frameWeight = 0.05 * Math.pow(L, 2) + 0.45 * L; 
+
+        // Multi-span efficiency (continuity reduces rafter weight)
+        if (N > 1) { frameWeight *= 0.88; }
+
+        // Snow Load Adjustment: approx 6% increase for every 25kg/m2 above 75kg base
+        let snowFactor = 1 + ((S - 75) / 25) * 0.06;
+        if (snowFactor < 0.9) snowFactor = 0.9; // Minimum structural threshold
+        
+        frameWeight *= snowFactor;
+
+        let secondary = 6.5; // Purlins/Girts
+        let bracing = 3.5;   // Bracing steel
+        
+        // Apply 15% for Connections and detailing
+        let totalUnitWeight = (frameWeight + secondary + bracing) * 1.15;
+        
+        let area = L * N * B;
+        let totalTons = (totalUnitWeight * area) / 1000;
+
+        document.getElementById('result').style.display = 'block';
+        document.getElementById('unitWeight').innerHTML = "Estimated Unit Weight: <strong>" + totalUnitWeight.toFixed(2) + " kg/m²</strong>";
+        document.getElementById('totalWeight').innerText = "Total Project Tonnage: " + totalTons.toFixed(2) + " Tons";
+    }
+</script>
+
+</body>
+</html>
