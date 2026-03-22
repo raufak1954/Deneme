@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>St37 Weight Surface Optimizer - Assumptions Included</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 30px; background: #f0f2f5; color: #333; }
+        .card { max-width: 600px; background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.1); margin: auto; }
+        h2 { color: #1a73e8; margin-top: 0; border-bottom: 2px solid #e8f0fe; padding-bottom: 10px; }
+        .section-title { font-size: 0.9em; font-weight: bold; color: #5f6368; margin-top: 20px; text-transform: uppercase; }
+        .input-row { display: flex; justify-content: space-between; margin-bottom: 12px; align-items: center; }
+        input { width: 90px; padding: 8px; border: 1px solid #ddd; border-radius: 6px; text-align: center; font-weight: bold; background: #fafafa; }
+        .results { margin-top: 25px; display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+        .box { padding: 20px; border-radius: 8px; text-align: center; transition: transform 0.2s; }
+        .box:hover { transform: translateY(-2px); }
+        .reg { background: #fff3e0; border: 1px solid #ffe0b2; }
+        .comp { background: #e8f5e9; border: 1px solid #c8e6c9; }
+        .val { display: block; font-size: 1.8em; font-weight: bold; color: #2c3e50; }
+        .label { font-size: 0.85em; color: #5f6368; text-transform: uppercase; letter-spacing: 1px; }
+        .warning { font-size: 0.85em; color: #d93025; margin-top: 15px; padding: 10px; background: #fdecea; border-radius: 6px; display: none; border: 1px solid #f5c6cb; }
+        .footer-note { font-size: 0.75em; color: #888; margin-top: 20px; line-height: 1.4; }
+    </style>
+</head>
+<body>
+
+<div class="card">
+    <h2>St37 Steel Optimizer</h2>
+    
+    <div class="section-title">Design Parameters</div>
+    <div class="input-row">
+        <label>Span (L) [meters]</label>
+        <input type="number" id="L" value="5.0" step="0.5" oninput="solve()">
+    </div>
+    <div class="input-row">
+        <label>Spacing (s) [meters]</label>
+        <input type="number" id="s" value="1.25" step="0.25" oninput="solve()">
+    </div>
+    <div class="input-row">
+        <label>Load (q) [t/m2]</label>
+        <input type="number" id="q" value="1.0" step="0.1" oninput="solve()">
+    </div>
+
+    <div class="results">
+        <div class="box reg">
+            <span class="label">Regular Weight</span>
+            <span id="zReg" class="val">0.0</span>
+            <span class="label">kg/m2</span>
+        </div>
+        <div class="box comp">
+            <span class="label">Composite Weight</span>
+            <span id="zComp" class="val">0.0</span>
+            <span class="label">kg/m2</span>
+        </div>
+    </div>
+
+    <div id="warn" class="warning">
+        <strong>Slab Saturation (s > L/4):</strong> Effective width is capped at L/4. Steel savings are reduced as beam load increases without concrete aid.
+    </div>
+
+    <div class="footer-note">
+        <strong>CORE ASSUMPTIONS:</strong><br>
+        • Material: St37 Steel | Allowable Stress (&sigma;): 1440 kg/cm²<br>
+        • Serviceability: Deflection limit fixed at L/360<br>
+        • Profiles: Based on standard European IPE sections<br>
+        • Composite: Assumes full shear connection with 10-12cm C25/30 slab<br>
+        • Shoring: Composite calculation assumes shored construction
+    </div>
+</div>
+
+<script>
+/**
+ * RAUF'S STRUCTURAL ENGINE - LOGIC & ASSUMPTIONS
+ * ----------------------------------------------
+ * 1. REGULAR DESIGN: 
+ *    Uses a fitted power-law derived from PCA on IPE 80-600 sections.
+ *    Formula: z = 4.39 * L^1.17 * s^-0.60 * q^0.41
+ * 
+ * 2. COMPOSITE DESIGN:
+ *    Assumes the Neutral Axis shifts to the slab-steel interface.
+ *    Base Efficiency Factor: 0.72 (28% weight reduction typical for St37).
+ * 
+ * 3. GEOMETRIC CONSTRAINT (Effective Width):
+ *    Code requirement: b_eff = min(s, L/4).
+ *    If s > L/4, the efficiency factor is penalized to simulate the 
+ *    increasing steel demand as spacing grows past the 'Slab Saturation' point.
+ */
+
+function solve() {
+    const L = parseFloat(document.getElementById('L').value);
+    const s = parseFloat(document.getElementById('s').value);
+    const q = parseFloat(document.getElementById('q').value);
+    
+    if(!L || !s || !q) return;
+
+    // Calculate Regular Weight (3D Surface Fit)
+    let zReg = 4.39 * Math.pow(L, 1.17) * Math.pow(s, -0.60) * Math.pow(q, 0.41);
+
+    // Composite Logic
+    const sLimit = L / 4;
+    let effFactor = 0.72; // Initial saving assumption for C25 slab + St37
+    
+    const isSaturated = s > sLimit;
+    document.getElementById('warn').style.display = isSaturated ? "block" : "none";
+    
+    if (isSaturated) {
+        // Penalty logic: As s exceeds L/4, effFactor moves closer to 1.0 (Regular weight)
+        // because the concrete flange width no longer increases with spacing.
+        const saturationRatio = s / sLimit;
+        effFactor = 0.72 * Math.pow(saturationRatio, 0.25); 
+    }
+
+    let zComp = zReg * effFactor;
+
+    // UI Updates
+    document.getElementById('zReg').innerText = zReg.toFixed(1);
+    // Ensure composite isn't calculated as heavier than regular due to saturation penalty
+    document.getElementById('zComp').innerText = Math.min(zComp, zReg).toFixed(1);
+}
+
+// Initialize on load
+solve();
+</script>
+
+</body>
+</html>
