@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>AISC Direct Analysis Tool (P-Delta)</title>
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; margin: 30px; background-color: #f4f7f6; color: #333; }
+        .container { max-width: 700px; background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); margin: auto; }
+        .input-group { margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; }
+        input { width: 130px; padding: 8px; border: 1px solid #ccc; border-radius: 4px; }
+        button { width: 100%; padding: 12px; margin-top: 15px; cursor: pointer; background: #dc3545; color: white; border: none; border-radius: 6px; font-size: 16px; font-weight: bold; }
+        #log { margin-top: 20px; white-space: pre-wrap; background: #1e1e1e; color: #d4d4d4; padding: 15px; border-radius: 6px; font-family: 'Courier New', monospace; font-size: 13px; max-height: 300px; overflow-y: auto; }
+        .result-highlight { margin-top: 20px; padding: 15px; border-left: 5px solid #dc3545; background: #fff5f5; border-radius: 4px; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>Direct Analysis Method (DAM)</h2>
+    <p>Cantilever Column: <strong>K=1.0</strong> | <strong>0.8*EI</strong> | <strong>L/500 Crookness</strong></p>
+    
+    <div class="input-group"><label>E [GPa]:</label><input type="number" id="E" value="210"></div>
+    <div class="input-group"><label>I [cm⁴]:</label><input type="number" id="I" value="1000"></div>
+    <div class="input-group"><label>Length (L) [m]:</label><input type="number" id="L" value="4"></div>
+    <div class="input-group"><label>Axial Load (P) [kN]:</label><input type="number" id="P" value="200"></div>
+
+    <button onclick="runDAM()">Calculate Amplified Moment</button>
+
+    <div id="finalResult" class="result-highlight" style="display:none;"></div>
+    <div id="log">Iteration history...</div>
+</div>
+
+<script>
+function runDAM() {
+    const E = parseFloat(document.getElementById('E').value) * 1e6; 
+    const I = parseFloat(document.getElementById('I').value) * 1e-8; 
+    const L = parseFloat(document.getElementById('L').value);
+    const P = parseFloat(document.getElementById('P').value);
+
+    // AISC DAM: Reduce stiffness by 0.8
+    const reducedEI = 0.8 * E * I;
+    
+    // Initial Imperfection
+    const delta_initial = L / 500;
+    
+    let current_total_delta = delta_initial;
+    let previous_total_delta = 0;
+    let iter = 0;
+    let logText = `--- Analysis Started ---\nUsing Reduced EI: ${(reducedEI).toFixed(2)} kNm²\n\n`;
+
+    // P-Delta Iteration
+    while (Math.abs(current_total_delta - previous_total_delta) > 1e-7 && iter < 100) {
+        previous_total_delta = current_total_delta;
+        
+        // Shear equivalent of the P-Delta moment
+        let V_pdelta = (P * current_total_delta) / L;
+        
+        // Additional deflection using reduced EI
+        let delta_additional = (V_pdelta * Math.pow(L, 3)) / (3 * reducedEI);
+        
+        current_total_delta = delta_initial + delta_additional;
+        iter++;
+        logText += `Iter ${iter}: Total Δ = ${(current_total_delta*1000).toFixed(4)} mm\n`;
+
+        if (iter >= 100) break;
+    }
+
+    // Results
+    const M_design = P * current_total_delta;
+    const M_first_order = P * delta_initial;
+    const B2 = M_design / M_first_order;
+
+    const summary = document.getElementById('finalResult');
+    summary.style.display = 'block';
+    
+    if (iter < 100) {
+        summary.innerHTML = `
+            <strong>Analysis Results (DAM):</strong><br>
+            Reduced Stiffness (0.8EI): <strong>${(reducedEI).toFixed(0)} kNm²</strong><br>
+            Amplified Design Moment (M<sub>r</sub>): <strong>${M_design.toFixed(2)} kNm</strong><br>
+            Amplification Factor (B<sub>2</sub>): <strong>${B2.toFixed(3)}</strong><br>
+            Final Sway: <strong>${(current_total_delta * 1000).toFixed(2)} mm</strong>
+        `;
+    } else {
+        summary.innerHTML = `<strong style="color:red;">SYSTEM UNSTABLE!</strong><br>Deflection did not converge. Axial load exceeds buckling capacity of reduced section.`;
+    }
+
+    document.getElementById('log').innerText = logText;
+}
+</script>
+
+</body>
+</html>
