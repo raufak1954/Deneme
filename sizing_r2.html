@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Aircraft Design Master - Engineering V7</title>
+    <style>
+        body { font-family: 'Helvetica Neue', Helvetica, sans-serif; margin: 20px; color: #000; background: #fff; line-height: 1.4; }
+        .container { max-width: 950px; margin: auto; border: 2px solid #000; padding: 25px; }
+        h1, h2 { text-align: center; text-transform: uppercase; border-bottom: 2px solid #000; padding-bottom: 8px; margin-top: 20px; }
+        
+        /* 3-Column Grid to ensure it fits the screen width */
+        .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-bottom: 15px; }
+        .group { display: flex; flex-direction: column; border: 1px solid #000; padding: 10px; background: #fdfdfd; }
+        label { font-size: 10px; font-weight: bold; text-transform: uppercase; margin-bottom: 4px; }
+        input, select { padding: 6px; border: 1px solid #000; font-size: 14px; background: #fff; }
+        
+        .calc-btn { width: 100%; padding: 20px; background: #000; color: #fff; border: none; cursor: pointer; font-size: 18px; font-weight: bold; text-transform: uppercase; margin: 25px 0; }
+        
+        table { width: 100%; border-collapse: collapse; font-family: 'Courier New', monospace; margin-bottom: 30px; }
+        th, td { border: 1px solid #000; padding: 12px; text-align: left; font-size: 14px; }
+        .header-black { background: #000; color: #fff; text-align: center; }
+        
+        .notes-section { background: #f4f4f4; padding: 20px; border: 1px solid #000; font-size: 13px; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>Aircraft Design & Performance Master</h1>
+
+    <h2>1. Engine & Fuel (The Powerplant)</h2>
+    <div class="grid">
+        <div class="group">
+            <label>Engine Max Power (HP)</label>
+            <input type="number" id="HP" value="100">
+            <div style="font-size: 9px; margin-top:4px;">Ex: Rotax 912 (100), O-200 (100)</div>
+        </div>
+        <div class="group">
+            <label>Engine Tech (SFC)</label>
+            <select id="engineTech">
+                <option value="0.00000072">Modern Fuel Injected</option>
+                <option value="0.00000078" selected>Standard Carbureted</option>
+                <option value="0.00000085">Vintage / Heavy</option>
+            </select>
+        </div>
+        <div class="group"><label>Fuel Volume (Liters)</label><input type="number" id="FuelL" value="85"></div>
+        <div class="group"><label>Takeoff RPM</label><input type="number" id="RPM_to" value="2400"></div>
+        <div class="group"><label>Cruise RPM</label><input type="number" id="RPM_cr" value="2200"></div>
+        <div class="group"><label>Prop Diameter (m)</label><input type="number" id="D" value="1.70"></div>
+    </div>
+
+    <h2>2. Airframe & Geometry</h2>
+    <div class="grid">
+        <div class="group">
+            <label>Aero Profile (Drag/Eff)</label>
+            <select id="aeroProfile">
+                <option value="0.022,0.92">Sleek Composite</option>
+                <option value="0.033,0.84" selected>Standard LSA</option>
+                <option value="0.045,0.75">Rough Bush Plane</option>
+            </select>
+        </div>
+        <div class="group">
+            <label>Tail Position (Downwash)</label>
+            <select id="tailPos">
+                <option value="0.42">Low/Mid Tail</option>
+                <option value="0.15">T-Tail (High)</option>
+            </select>
+        </div>
+        <div class="group"><label>MTOW (N)</label><input type="number" id="W" value="6000"></div>
+        <div class="group"><label>Wing Span (m)</label><input type="number" id="b" value="8.7"></div>
+        <div class="group"><label>Wing Area (S) [m²]</label><input type="number" id="S" value="10.88"></div>
+        <div class="group"><label>Mean Chord (c) [m]</label><input type="number" id="c" value="1.25"></div>
+        <div class="group"><label>Tail Area (Sh) [m²]</label><input type="number" id="Sh" value="1.81"></div>
+        <div class="group"><label>Tail Arm (Lh) [m]</label><input type="number" id="Lh" value="4.5"></div>
+        <div class="group"><label>CG Position (% chord)</label><input type="number" id="Xcg" value="28"></div>
+        <div class="group"><label>Runway Surface</label><select id="surface"><option value="0.03">Tarmac</option><option value="0.08">Short Grass</option></select></div>
+        <div class="group"><label>Wing Flaps</label><select id="flaps"><option value="clean">Clean (No Flaps)</option><option value="flaps">Full Flaps</option></select></div>
+    </div>
+
+    <button class="calc-btn" onclick="calculateAll()">Calculate Performance Results</button>
+
+    <table>
+        <tr class="header-black"><th colspan="3">FINAL ENGINEERING DATA</th></tr>
+        <tbody id="results"></tbody>
+    </table>
+
+    <div class="notes-section" id="notes" style="display:none;">
+        <h3>Technical Explanations</h3>
+        <ul id="note-list">
+            <li><strong>Power & SFC:</strong> Fuel weight is calculated using the input volume. Range is calculated based on the Engine HP and the selected SFC efficiency.</li>
+            <li><strong>Stall & Landing:</strong> Selecting "Full Flaps" increases the maximum lift coefficient (CLmax) to 1.90, which reduces stall speed and ground roll.</li>
+            <li><strong>Static Margin:</strong> A measure of longitudinal stability; 10-15% is ideal for a stable, easy-to-fly aircraft.</li>
+        </ul>
+    </div>
+</div>
+
+<script>
+function calculateAll() {
+    // 1. Inputs
+    const HP = parseFloat(document.getElementById('HP').value);
+    const sfc = parseFloat(document.getElementById('engineTech').value);
+    const FuelL = parseFloat(document.getElementById('FuelL').value);
+    const RPM_to = parseFloat(document.getElementById('RPM_to').value);
+    const D = parseFloat(document.getElementById('D').value);
+    const W = parseFloat(document.getElementById('W').value);
+    const b = parseFloat(document.getElementById('b').value);
+    const S = parseFloat(document.getElementById('S').value);
+    const c = parseFloat(document.getElementById('c').value);
+    const Sh = parseFloat(document.getElementById('Sh').value);
+    const Lh = parseFloat(document.getElementById('Lh').value);
+    const Xcg = parseFloat(document.getElementById('Xcg').value)/100;
+    const mu = parseFloat(document.getElementById('surface').value);
+    const isFlaps = document.getElementById('flaps').value === 'flaps';
+    
+    const aero = document.getElementById('aeroProfile').value.split(',');
+    const cd0 = parseFloat(aero[0]);
+    const oswald = parseFloat(aero[1]);
+    const deda = parseFloat(document.getElementById('tailPos').value);
+
+    // 2. Constants & Conversions
+    const rho = 1.225; const g = 9.81;
+    const Wf_N = FuelL * 0.72 * g;
+    const AR = (b*b)/S;
+    const Clmax = isFlaps ? 1.90 : 1.45;
+    const Cla_wing = 6.28 / (1 + (6.28 / (Math.PI * AR * oswald)));
+
+    // 3. Performance Math
+    const Vs = Math.sqrt((2 * W) / (rho * S * Clmax));
+    const Vto = Vs * 1.2;
+    const Vcr = Vs * 2.1;
+    
+    // Dynamic Thrust Calculation using HP
+    const P_watts = HP * 745.7;
+    const T_static = (P_watts / (rho * Math.pow(RPM_to/60, 3) * Math.pow(D, 5))) * 1.2 * rho * Math.pow(RPM_to/60, 2) * Math.pow(D, 4);
+    
+    // Performance Results
+    const roll = (Math.pow(Vto, 2) * (W/g)) / (2 * ((T_static * 0.8) - (mu * W)));
+    const landing = (Math.pow(Vto, 2)) / (2 * g * (0.4 + mu));
+    const ROC = (((T_static * 0.85 - (cd0 * 0.5 * rho * Vto*Vto * S)) * Vto) / W) * 196.85;
+    const range = (Vcr * 1.944) * (Wf_N / (P_watts * 0.75 * sfc)) / 3600;
+
+    // Stability
+    const Vh = (Lh * Sh) / (S * c);
+    const Xnp = 0.25 + (Vh * (3.63/Cla_wing) * (1 - deda));
+    const SM = (Xnp - Xcg) * 100;
+
+    // 4. Populate Table
+    document.getElementById('results').innerHTML = `
+        <tr><td>Stall Speed</td><td>${(Vs * 1.944).toFixed(1)}</td><td>Knots</td></tr>
+        <tr><td>Landing Ground Roll</td><td>${landing.toFixed(0)}</td><td>Meters</td></tr>
+        <tr><td>Takeoff Ground Roll</td><td>${roll.toFixed(0)}</td><td>Meters</td></tr>
+        <tr><td>Initial Rate of Climb</td><td>${ROC.toFixed(0)}</td><td>Feet / Min</td></tr>
+        <tr><td>Max Range</td><td>${range.toFixed(0)}</td><td>Nautical Miles</td></tr>
+        <tr><td>Static Margin</td><td><b>${SM.toFixed(1)}%</b></td><td><b>${SM > 5 ? 'STABLE' : 'UNSTABLE'}</b></td></tr>
+    `;
+    document.getElementById('notes').style.display = 'block';
+}
+</script>
+</body>
+</html>
