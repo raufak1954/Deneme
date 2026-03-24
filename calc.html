@@ -1,26 +1,52 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Calculator</title>
     <script>
-        function deleteLastChar() {
-            var display = document.getElementById('display');
-            display.value = display.value.slice(0, -1);
-        }
+        // Basic calculator functionality
+        function calculate() {
+            // Get values
+            const num1 = parseFloat(document.getElementById('num1').value);
+            const num2 = parseFloat(document.getElementById('num2').value);
+            const operation = document.getElementById('operation').value;
+            let result;
 
-        function calculateTangent() {
-            var input = document.getElementById('display').value;
-            var result = Math.tan(input);
-            document.getElementById('display').value = result;
-        }
+            // Perform calculation
+            switch(operation) {
+                case 'add':
+                    result = num1 + num2;
+                    break;
+                case 'subtract':
+                    result = num1 - num2;
+                    break;
+                case 'multiply':
+                    result = num1 * num2;
+                    break;
+                case 'divide':
+                    result = num2 !== 0 ? num1 / num2 : 'Error';
+                    break;
+                default:
+                    result = 'Invalid operation';
+            }
 
-        // Other existing JavaScript functions for the calculator
+            // Display result
+            document.getElementById('result').innerText = result;
+        }
     </script>
 </head>
 <body>
-    <input type="text" id="display" />
-    <button onclick="deleteLastChar()">Backspace</button>
-    <button onclick="calculateTangent()">Tangent</button>
-    <!-- Other calculator buttons -->
+    <h1>Calculator</h1>
+    <input type="number" id="num1" placeholder="First number" />
+    <input type="number" id="num2" placeholder="Second number" />
+    <select id="operation">
+        <option value="add">Add</option>
+        <option value="subtract">Subtract</option>
+        <option value="multiply">Multiply</option>
+        <option value="divide">Divide</option>
+    </select>
+    <button onclick="calculate()">Calculate</button>
+    <div id="result"></div>
 </body>
 </html>
