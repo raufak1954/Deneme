@@ -135,7 +135,7 @@ function calculateAll() {
     
     // Performance Results
     const roll = (Math.pow(Vto, 2) * (W/g)) / (2 * ((T_static * 0.8) - (mu * W)));
-    const landing = (Math.pow(Vto, 2)) / (2 * g * (0.4 + mu));
+    const landing = (Math.pow(Vto, 2)) / (2 * g * (0.28 + mu));
     const ROC = (((T_static * 0.85 - (cd0 * 0.5 * rho * Vto*Vto * S)) * Vto) / W) * 196.85;
     const range = (Vcr * 1.944) * (Wf_N / (P_watts * 0.75 * sfc)) / 3600;
 
