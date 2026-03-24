@@ -1,28 +1,26 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Trigonometric Functions Calculator</title>
+    <title>Calculator</title>
+    <script>
+        function deleteLastChar() {
+            var display = document.getElementById('display');
+            display.value = display.value.slice(0, -1);
+        }
+
+        function calculateTangent() {
+            var input = document.getElementById('display').value;
+            var result = Math.tan(input);
+            document.getElementById('display').value = result;
+        }
+
+        // Other existing JavaScript functions for the calculator
+    </script>
 </head>
 <body>
-    <h1>Trigonometric Functions Calculator</h1>
-    <label for="degrees">Enter Degrees:</label>
-    <input type="number" id="degrees" />
-    <button onclick="calculate()">Calculate</button>
-    <h2>Results:</h2>
-    <p id="sin-result"></p>
-    <p id="cos-result"></p>
-    <p id="tan-result"></p>
-
-    <script>
-        function calculate() {
-            const degrees = parseFloat(document.getElementById('degrees').value);
-            const radians = degrees * (Math.PI / 180);
-            document.getElementById('sin-result').innerText = `sin(${degrees}) = ${Math.sin(radians)}`;
-            document.getElementById('cos-result').innerText = `cos(${degrees}) = ${Math.cos(radians)}`;
-            document.getElementById('tan-result').innerText = `tan(${degrees}) = ${Math.tan(radians)}`;
-        }
-    </script>
+    <input type="text" id="display" />
+    <button onclick="deleteLastChar()">Backspace</button>
+    <button onclick="calculateTangent()">Tangent</button>
+    <!-- Other calculator buttons -->
 </body>
 </html>
