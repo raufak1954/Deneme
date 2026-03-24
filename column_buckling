@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Column Stability Solver</title>
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; margin: 20px; background-color: #f0f2f5; }
+        .card { max-width: 600px; background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); margin: auto; min-height: 400px; }
+        h2 { color: #1a73e8; border-bottom: 2px solid #e8f0fe; padding-bottom: 10px; margin-top: 0; }
+        .sect { margin-bottom: 15px; padding: 12px; border: 1px solid #f1f3f4; border-radius: 8px; background: #fafafa; }
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; }
+        label { font-weight: 600; color: #5f6368; font-size: 0.9em; display: block; margin-bottom: 4px; }
+        input, select { width: 100%; padding: 8px; border: 1px solid #dadce0; border-radius: 4px; box-sizing: border-box; }
+        button { background: #1a73e8; color: white; padding: 14px; border: none; border-radius: 6px; cursor: pointer; width: 100%; font-size: 16px; font-weight: bold; margin-top: 10px; }
+        #resBox { padding: 15px; background: #f8f9fa; border-left: 5px solid #1a73e8; font-family: monospace; margin: 20px 0; line-height: 1.6; white-space: pre-wrap; }
+        .notes-sect { font-size: 0.85em; color: #444; background: #fffdf0; border: 1px solid #ffeeba; padding: 15px; border-radius: 8px; line-height: 1.5; margin-top: 20px; }
+        .formula { font-style: italic; font-weight: bold; color: #000; display: block; margin: 4px 0; }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; background: #fff; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: center; }
+        th { background: #f8f9fa; }
+        .spacer { height: 20px; }
+    </style>
+</head>
+<body>
+
+<div class="card">
+    <h2>Column Solver (Eq. 2.1.15)</h2>
+    
+    <div class="sect">
+        <strong>Column Properties</strong>
+        <div class="grid">
+            <div><label>Length Lc (m)</label><input type="number" id="Lc" value="5"></div>
+            <div><label>Inertia Ic (cm⁴)</label><input type="number" id="Ic" value="200"></div>
+        </div>
+    </div>
+
+    <div class="sect">
+        <strong>Bottom Restraint (&xi;₀)</strong>
+        <select id="mode0" onchange="toggle('0')">
+            <option value="fixed">Fully Fixed</option>
+            <option value="pinned">Pinned</option>
+            <option value="beam">Connected to Beam</option>
+        </select>
+        <div id="ui0" style="display:none" class="grid">
+            <div><label>Beam Ib (cm⁴)</label><input type="number" id="Ib0" value="0"></div>
+            <div><label>Beam Lb (m)</label><input type="number" id="Lb0" value="0"></div>
+            <div style="grid-column: span 2">
+                <label>Beam Far End</label>
+                <select id="n0"><option value="4">Fixed (4EI/L)</option><option value="3">Pinned (3EI/L)</option></select>
+            </div>
+        </div>
+    </div>
+
+    <div class="sect">
+        <strong>Top Restraint (&xi;₁)</strong>
+        <select id="mode1" onchange="toggle('1')">
+            <option value="fixed">Fully Fixed</option>
+            <option value="pinned" selected>Pinned / Free End</option>
+            <option value="beam">Connected to Beam</option>
+        </select>
+        <div id="ui1" style="display:none" class="grid">
+            <div><label>Beam Ib (cm⁴)</label><input type="number" id="Ib1" value="0"></div>
+            <div><label>Beam Lb (m)</label><input type="number" id="Lb1" value="0"></div>
+            <div style="grid-column: span 2">
+                <label>Beam Far End</label>
+                <select id="n1"><option value="4">Fixed</option><option value="3">Pinned</option></select>
+            </div>
+        </div>
+    </div>
+
+    <div class="sect">
+        <strong>Lateral Stiffness (&zeta;)</strong>
+        <div class="grid">
+            <div style="grid-column: span 2">
+                <label>Value (0 = Sway, 1e10 = Braced)</label>
+                <input type="number" id="zeta" value="0">
+            </div>
+        </div>
+    </div>
+
+    <button onclick="solve()">Calculate Results</button>
+    <div id="resBox">Click calculate...</div>
+
+    <div class="notes-sect">
+        <strong>Engineering Note:</strong>
+        <p><strong>Lateral Ksi (&zeta;):</strong> Non-dimensional lateral stiffness.
+        <span class="formula">&zeta; = (k_lat &middot; Lc&sup3;) / (E &middot; Ic)</span></p>
+
+        <hr>
+        <strong>AISC Tapered Member Brainstorming:</strong>
+        <p>Per AISC Design Guide 25, for a web-tapered I-section, use the smaller end inertia (Itop) as reference and apply an inertia boost or length modification.</p>
+        <table>
+            <tr><th>Depth Ratio (H_base / H_top)</th><th>Approx. I_eq Multiplier</th></tr>
+            <tr><td>1.0</td><td>1.00</td></tr>
+            <tr><td>1.5</td><td>~1.25</td></tr>
+            <tr><td>2.0</td><td>~1.55</td></tr>
+        </table>
+        <p style="margin-top:10px;"><small>Note: Equivalent Inertia (Ieq) is used to find the elastic buckling load Pcr.</small></p>
+    </div>
+    <div class="spacer"></div>
+</div>
+
+<script>
+function toggle(id) {
+    document.getElementById('ui'+id).style.display = (document.getElementById('mode'+id).value === 'beam') ? 'grid' : 'none';
+}
+
+function solve() {
+    const Lc = parseFloat(document.getElementById('Lc').value);
+    const Ic = parseFloat(document.getElementById('Ic').value) * 1e-8;
+    const E = 210000000;
+
+    function getXi(id) {
+        const mode = document.getElementById('mode'+id).value;
+        if (mode === 'fixed') return 1e10;
+        if (mode === 'pinned') return 1e-10;
+        const Ib = parseFloat(document.getElementById('Ib'+id).value) * 1e-8;
+        const Lb = parseFloat(document.getElementById('Lb'+id).value);
+        const n = parseFloat(document.getElementById('n'+id).value);
+        return (Ib > 0 && Lb > 0) ? (n * Ib / Lb) * (Lc / Ic) : 1e-10;
+    }
+
+    const x0 = getXi('0'), x1 = getXi('1');
+    const z = parseFloat(document.getElementById('zeta').value) || 1e-10;
+
+    function f(a) {
+        let s = Math.sqrt(a);
+        let t1 = 2;
+        let t2 = (-1 + (1/x0 + 1/x1) + a*(1/(x0*x1) - 1/z + a/(x0*x1*z))) * s * Math.sin(s);
+        let t3 = (2 + a*(1/x0 + 1/x1)*(1 + a/z)) * Math.cos(s);
+        return t1 + t2 - t3;
+    }
+
+    let low = 0.001, high = 0.001, step = 0.05, alpha = 0;
+    for (let i = 0; i < 2000; i++) {
+        high = low + step;
+        if (f(low) * f(high) <= 0) break;
+        low = high;
+    }
+
+    for (let i = 0; i < 100; i++) {
+        alpha = (low + high) / 2;
+        if (f(low) * f(alpha) <= 0) high = alpha; else low = alpha;
+    }
+
+    const K = Math.PI / Math.sqrt(alpha);
+    const Ncrit = alpha * (E * Ic / (Lc * Lc));
+
+    document.getElementById('resBox').innerHTML = 
+        `Ksi_0: ${x0 > 1e6 ? 'INF' : x0.toFixed(4)}\n` +
+        `Ksi_1: ${x1 < 1e-6 ? '0' : x1.toFixed(4)}\n` +
+        `---------------------------\n` +
+        `Alpha (\u03B1): ${alpha.toFixed(4)}\n` +
+        `Factor (K): ${K.toFixed(3)}\n` +
+        `N_crit   : ${Ncrit.toFixed(2)} kN`;
+}
+</script>
+</body>
+</html>
