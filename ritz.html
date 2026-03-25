@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rayleigh-Ritz Method Notes</title>
+    <style>
+        body { font-family: sans-serif; line-height: 1.6; max-width: 800px; margin: 20px auto; padding: 0 10px; color: #333; }
+        h1, h2 { color: #2c3e50; border-bottom: 2px solid #eee; }
+        .formula { background: #f4f4f4; padding: 15px; border-radius: 5px; font-family: "Courier New", monospace; margin: 10px 0; overflow-x: auto; }
+        .box { border-left: 5px solid #3498db; background: #eef7fd; padding: 10px; margin: 20px 0; }
+        ul { padding-left: 20px; }
+    </style>
+</head>
+<body>
+
+    <h1>Rayleigh-Ritz Method</h1>
+    <p>A numerical method to approximate deflections and buckling loads by minimizing total potential energy.</p>
+
+    <h2>1. Deflection Analysis</h2>
+    <p>Assume a shape function <strong>v(x) = &Sigma; c<sub>i</sub> &phi;<sub>i</sub>(x)</strong> that satisfies boundary conditions.</p>
+    
+    <div class="formula">
+        <strong>Total Potential Energy (&Pi;):</strong><br>
+        &Pi; = U - W <br><br>
+        <strong>Strain Energy (U):</strong> &int; (EI/2) (v'')&sup2; dx <br>
+        <strong>External Work (W):</strong> &int; q v dx
+    </div>
+
+    <div class="box">
+        <strong>The Solution:</strong> Differentiate &Pi; with respect to each coefficient (c<sub>i</sub>) and set to zero:<br>
+        <strong>&part;&Pi; / &part;c<sub>i</sub> = 0</strong>
+    </div>
+
+    <h2>2. Buckling Analysis (P<sub>cr</sub>)</h2>
+    <p>For a column under axial load P, buckling occurs when the internal strain energy equals the potential of the external load.</p>
+
+    <div class="formula">
+        <strong>Bending Energy (U):</strong> &int; (EI/2) (v'')&sup2; dx <br>
+        <strong>Load Potential (V<sub>e</sub>):</strong> &int; (P/2) (v')&sup2; dx
+    </div>
+
+    <div class="box">
+        <strong>Critical Load Formula:</strong><br>
+        P<sub>cr</sub> = [ &int; EI (v'')&sup2; dx ] / [ &int; (v')&sup2; dx ]
+    </div>
+
+    <h2>Key Reminders for Rauf:</h2>
+    <ul>
+        <li><strong>Degrees:</strong> For a point load, v'' is linear (1st degree), so v must be 3rd degree.</li>
+        <li><strong>Symmetry:</strong> For symmetric loads, use symmetric functions (even powers or sines) to save calculation time.</li>
+        <li><strong>Boundary Conditions:</strong> The trial function <strong>must</strong> satisfy essential BCs (displacement and slope at supports).</li>
+    </ul>
+
+</body>
+</html>
