@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MDM - One-Story Sway Frame</title>
+    <style>
+        body { font-family: sans-serif; line-height: 1.6; max-width: 800px; margin: 20px auto; padding: 0 10px; color: #333; }
+        h2 { border-bottom: 2px solid #444; padding-bottom: 5px; color: #2c3e50; }
+        .step { margin-bottom: 20px; padding: 15px; background: #f9f9f9; border-left: 5px solid #2980b9; }
+        code { background: #eee; padding: 2px 4px; border-radius: 4px; font-weight: bold; }
+        .formula { display: block; text-align: center; margin: 15px 0; font-style: italic; background: #fff; padding: 10px; border: 1px dashed #ccc; }
+    </style>
+</head>
+<body>
+
+    <h2>Moment Distribution Method: Sway Frame</h2>
+
+    <div class="step">
+        <strong>1. Non-Sway Analysis</strong>
+        <ul>
+            <li>Calculate <code>FEM</code> for all members based on gravity loads.</li>
+            <li>Perform MDM (Distribution & Carry-Over) until joints balance.</li>
+            <li>Calculate column shears: <code>V = (M_top + M_bot) / L</code>.</li>
+            <li>Sum shears to find restraining force <code>R</code>.</li>
+        </ul>
+    </div>
+
+    <div class="step">
+        <strong>2. Sway Analysis</strong>
+        <ul>
+            <li>Apply arbitrary displacement <code>Δ</code>.</li>
+            <li>Assume initial sway moments (e.g., 100 kNm) proportional to <code>I/L²</code>.</li>
+            <li>Distribute moments until balanced.</li>
+            <li>Sum resulting shears to find sway force <code>S</code>.</li>
+        </ul>
+    </div>
+
+    <div class="step">
+        <strong>3. Final Superposition</strong>
+        <div class="formula">
+            Correction Factor: k = R / S
+        </div>
+        <div class="formula">
+            M_final = M_non-sway + (k * M_sway)
+        </div>
+    </div>
+
+</body>
+</html>
