@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Stiffness Coefficients Table</title>
+    <style>
+        body { font-family: sans-serif; padding: 20px; background-color: #f4f4f4; }
+        table { width: 100%; border-collapse: collapse; background: white; font-size: 1.1em; }
+        th, td { border: 2px solid #333; padding: 12px; text-align: left; }
+        th { background-color: #eee; }
+        .bold { font-weight: bold; }
+    </style>
+</head>
+<body>
+
+    <h2>Structural Member Stiffness Coefficients (k)</h2>
+    <p>Force or Moment required for unit displacement (Δ=1) or rotation (θ=1).</p>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Member / Condition</th>
+                <th>Stiffness Factor (k)</th>
+                <th>Short Explanation</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td class="bold">Flexural (Fixed-Fixed)</td>
+                <td>4EI / L</td>
+                <td>Moment for θ=1 at one end (far end fixed).</td>
+            </tr>
+            <tr>
+                <td class="bold">Flexural (Fixed-Pinned)</td>
+                <td>3EI / L</td>
+                <td>Moment for θ=1 at one end (far end pinned).</td>
+            </tr>
+            <tr>
+                <td class="bold">Axial</td>
+                <td>AE / L</td>
+                <td>Axial force for unit longitudinal displacement.</td>
+            </tr>
+            <tr>
+                <td class="bold">Shear (Fixed-Fixed)</td>
+                <td>12EI / L³</td>
+                <td>Lateral force for Δ=1 (no rotation allowed).</td>
+            </tr>
+            <tr>
+                <td class="bold">Shear (Fixed-Pinned)</td>
+                <td>3EI / L³</td>
+                <td>Lateral force for Δ=1 (one end rotates).</td>
+            </tr>
+            <tr>
+                <td class="bold">Torsional</td>
+                <td>GJ / L</td>
+                <td>Torque required for unit twist (φ=1).</td>
+            </tr>
+            <tr>
+                <td class="bold">Haunch (10% Span)</td>
+                <td>~5.0EI / L</td>
+                <td>Slightly increased end resistance.</td>
+            </tr>
+            <tr>
+                <td class="bold">Haunch (15% Span)</td>
+                <td>~6.0EI / L</td>
+                <td>Standard industrial portal frame rule.</td>
+            </tr>
+            <tr>
+                <td class="bold">Haunch (20% Span)</td>
+                <td>~7.0EI / L</td>
+                <td>Heavy haunch, significant moment shift.</td>
+            </tr>
+        </tbody>
+    </table>
+
+</body>
+</html>
