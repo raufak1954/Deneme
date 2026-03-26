@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Rauf's Cessna RMI/DME Trainer</title>
+    <style>
+        body { background: #1a1a1b; color: #00ff00; font-family: 'Courier New', monospace; text-align: center; margin: 0; overflow: hidden; }
+        #task-panel { padding: 10px; background: #222; border-bottom: 3px solid #444; height: 110px; }
+        #task-text { font-size: 1.8em; color: #fff; font-weight: bold; margin: 5px 0; }
+        #status-text { font-size: 0.9em; color: #888; }
+        .instrument-container { display: flex; justify-content: center; align-items: center; height: 45vh; padding: 20px; }
+        .bezel { position: relative; width: 340px; height: 340px; border: 15px solid #222; border-radius: 40px; background: #000; box-shadow: 0 0 40px #000; }
+        #compass-card { position: absolute; top: 20px; left: 20px; width: 300px; height: 300px; border-radius: 50%; background: #080808; transition: transform 0.1s linear; }
+        .tick { position: absolute; width: 100%; height: 100%; text-align: center; }
+        .tick-thick { border-top: 14px solid #fff; width: 4px; left: calc(50% - 2px); position: absolute; top: 0; }
+        .tick-thin { border-top: 7px solid #bbb; width: 2px; left: calc(50% - 1px); position: absolute; top: 0; }
+        .tick-label { position: absolute; top: 20px; width: 100%; color: #fff; font-weight: bold; font-size: 1.2em; }
+        #top-index { position: absolute; top: 8px; left: 50%; transform: translateX(-50%); width: 0; height: 0; border-left: 12px solid transparent; border-right: 12px solid transparent; border-top: 18px solid white; z-index: 30; }
+        #dme-display { position: absolute; top: 65%; left: 50%; transform: translateX(-50%); color: #fff; font-size: 1.5em; z-index: 26; background: rgba(0,0,0,0.8); padding: 2px 10px; border-radius: 4px; border: 1px solid #444; min-width: 100px; }
+        #rmi-needle { position: absolute; top: 50%; left: 50%; width: 10px; height: 260px; background: #ffee00; transform-origin: 50% 50%; margin-left: -5px; margin-top: -130px; clip-path: polygon(50% 0%, 0% 18%, 45% 18%, 45% 100%, 55% 100%, 55% 18%, 100% 18%); z-index: 25; }
+        #digital-win { background: #000; border: 2px solid #00ff00; padding: 10px; width: 140px; margin: 5px auto; font-size: 2.2em; border-radius: 8px; }
+        .controls { display: flex; justify-content: center; gap: 10px; margin-top: 10px; }
+        button { padding: 15px 30px; font-size: 1.2em; font-weight: bold; border: none; border-radius: 8px; cursor: pointer; color: white; }
+        #start-btn { background: #006400; }
+        #reset-btn { background: #8b0000; }
+    </style>
+</head>
+<body>
+
+<div id="task-panel">
+    <div id="task-text">SYSTEM STANDBY</div>
+    <div id="status-text">Speed: 0.04 (Training Pace)</div>
+</div>
+
+<div class="instrument-container">
+    <div class="bezel">
+        <div id="top-index"></div>
+        <div id="compass-card"></div>
+        <div id="dme-display">DME <span id="dist-num">0.0</span></div>
+        <div id="rmi-needle"></div>
+    </div>
+</div>
+
+<div id="digital-win"><span id="hdg-num">000</span>°</div>
+
+<div class="controls">
+    <button id="start-btn">START</button>
+    <button id="reset-btn">RESET</button>
+</div>
+
+<script>
+    let aircraftHdg = 0; 
+    let targetHdg = 0;
+    let planeX = 150, planeY = 150; 
+    const stationX = 0, stationY = 0; 
+    let missionType = "intercept"; 
+    let targetVal = 0;
+    let achievementCounter = 0;
+    let isRunning = false;
+
+    const card = document.getElementById('compass-card');
+    const needle = document.getElementById('rmi-needle');
+    const display = document.getElementById('hdg-num');
+    const dmeDisplay = document.getElementById('dist-num');
+    const taskText = document.getElementById('task-text');
+    const btnStart = document.getElementById('start-btn');
+    const btnReset = document.getElementById('reset-btn');
+
+    for (let i = 0; i < 360; i += 5) {
+        const wrap = document.createElement('div');
+        wrap.className = 'tick'; wrap.style.transform = `rotate(${i}deg)`;
+        const mark = document.createElement('div');
+        if (i % 30 === 0) {
+            mark.className = 'tick-thick';
+            const label = document.createElement('div');
+            label.className = 'tick-label';
+            const val = i / 10;
+            label.innerText = (i===0)?'N':(i===90)?'E':(i===180)?'S':(i===270)?'W':val;
+            wrap.appendChild(label);
+        } else { mark.className = 'tick-thin'; }
+        wrap.appendChild(mark);
+        card.appendChild(wrap);
+    }
+
+    function resetFlight() {
+        // Randomize plane position
+        planeX = (Math.random() * 200) - 100;
+        planeY = (Math.random() * 200) - 100;
+        aircraftHdg = Math.floor(Math.random() * 360);
+        targetHdg = aircraftHdg;
+        getNewMission();
+    }
+
+    function getNewMission() {
+        if(Math.random() > 0.5) {
+            missionType = "intercept";
+            targetVal = Math.floor(Math.random() * 360);
+            taskText.innerText = "INBOUND: " + targetVal.toString().padStart(3, '0') + "°";
+        } else {
+            missionType = "arc";
+            targetVal = Math.floor(Math.random() * 5) + 8;
+            taskText.innerText = "FLY ARC: " + targetVal + " NM";
+        }
+        taskText.style.color = "#fff";
+        achievementCounter = 0;
+    }
+
+    function animate() {
+        if (!isRunning) return;
+
+        let diff = targetHdg - aircraftHdg;
+        if (diff > 180) diff -= 360;
+        if (diff < -180) diff += 360;
+        aircraftHdg = (aircraftHdg + diff * 0.02 + 360) % 360;
+
+        const speed = 0.04; // SLOW CONSTANT SPEED
+        const rad = (aircraftHdg - 90) * (Math.PI / 180);
+        planeX += Math.cos(rad) * speed;
+        planeY += Math.sin(rad) * speed;
+
+        let dx = stationX - planeX;
+        let dy = stationY - planeY;
+        let distance = Math.sqrt(dx*dx + dy*dy) / 10; 
+        let bearingToStation = (Math.atan2(dy, dx) * 180 / Math.PI + 90 + 360) % 360;
+
+        card.style.transform = `rotate(${-aircraftHdg}deg)`;
+        let visualNeedleRot = (bearingToStation - aircraftHdg + 360) % 360;
+        needle.style.transform = `rotate(${visualNeedleRot}deg)`;
+        
+        display.innerText = Math.round(aircraftHdg).toString().padStart(3, '0');
+        dmeDisplay.innerText = distance.toFixed(1);
+
+        let success = false;
+        if (missionType === "intercept") {
+            success = Math.abs(aircraftHdg - targetVal) < 2 && Math.abs(visualNeedleRot) < 2;
+        } else {
+            let onDistance = Math.abs(distance - targetVal) < 0.2;
+            let onWingtip = Math.abs(visualNeedleRot - 90) < 5 || Math.abs(visualNeedleRot - 270) < 5;
+            success = onDistance && onWingtip;
+        }
+
+        if (success) {
+            achievementCounter++;
+            if (achievementCounter > 150) { 
+                taskText.innerText = "CAPTURED";
+                taskText.style.color = "cyan";
+                achievementCounter = -400; 
+                setTimeout(getNewMission, 2500);
+            }
+        } else { achievementCounter = 0; }
+        requestAnimationFrame(animate);
+    }
+
+    function handleMotion(e) {
+        if (Math.abs(e.gamma) > 10) targetHdg += (e.gamma / 80); 
+        targetHdg = (targetHdg + 360) % 360;
+    }
+
+    btnStart.onclick = () => {
+        if (typeof DeviceOrientationEvent.requestPermission === 'function') {
+            DeviceOrientationEvent.requestPermission().then(p => {
+                if (p === 'granted') {
+                    window.addEventListener('deviceorientation', handleMotion);
+                    isRunning = true;
+                    btnStart.style.display = 'none';
+                    resetFlight();
+                    animate();
+                }
+            });
+        } else {
+            window.addEventListener('deviceorientation', handleMotion);
+            isRunning = true;
+            btnStart.style.display = 'none';
+            resetFlight();
+            animate();
+        }
+    };
+
+    btnReset.onclick = () => {
+        resetFlight();
+    };
+</script>
+</body>
+</html>
