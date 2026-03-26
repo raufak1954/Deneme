@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>8.8 Bolt Allowable Loads (AISC ASD)</title>
+    <style>
+        body { font-family: sans-serif; margin: 20px; background-color: #f4f4f4; }
+        table { width: 100%; border-collapse: collapse; background: white; margin-top: 10px; }
+        th, td { border: 1px solid #ccc; padding: 10px; text-align: center; }
+        th { background-color: #2c3e50; color: white; }
+        tr:nth-child(even) { background-color: #f9f9f9; }
+        .note { font-size: 0.9em; color: #555; margin-top: 15px; }
+        .highlight { color: #d35400; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+    <h2>8.8 Grade Bolt Allowable Loads (ASD)</h2>
+    <p>Values based on <b>Fnt = 300 MPa</b> and <b>Fnv = 180 MPa</b> (Threads Included/N condition).</p>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Bolt Size</th>
+                <th>Nominal Area (Ab) [mm²]</th>
+                <th>Allowable Tension [kN]</th>
+                <th>Allowable Shear (N) [kN]</th>
+            </tr>
+        </thead>
+        <tbody id="boltTable">
+            </tbody>
+    </table>
+
+    <div class="note">
+        <p><b>Area Calculation Rule:</b></p>
+        <ul>
+            <li><b>Allowable Tension:</b> Calculated using 0.75 * Fub / 2.0 applied to the <span class="highlight">Nominal Shank Area (Ab)</span>.</li>
+            <li><b>Allowable Shear (N):</b> Threads included in shear plane; applied to <span class="highlight">Nominal Shank Area (Ab)</span>.</li>
+            <li><b>Allowable Shear (X):</b> If threads are excluded (Shank only), multiply Shear (N) values by <b>1.25</b>.</li>
+        </ul>
+    </div>
+
+    <script>
+        const bolts = [
+            { size: "M12", d: 12 }, { size: "M16", d: 16 }, { size: "M20", d: 20 },
+            { size: "M22", d: 22 }, { size: "M24", d: 24 }, { size: "M27", d: 27 },
+            { size: "M30", d: 30 }, { size: "M36", d: 36 }
+        ];
+
+        const Ft_allow = 300; // MPa
+        const Fv_allow_N = 180; // MPa (Threads included)
+
+        const tableBody = document.getElementById('boltTable');
+
+        bolts.forEach(bolt => {
+            const Ab = (Math.PI * Math.pow(bolt.d, 2)) / 4;
+            const tension = (Ab * Ft_allow) / 1000;
+            const shearN = (Ab * Fv_allow_N) / 1000;
+
+            const row = `<tr>
+                <td>${bolt.size}</td>
+                <td>${Ab.toFixed(1)}</td>
+                <td>${tension.toFixed(2)}</td>
+                <td>${shearN.toFixed(2)}</td>
+            </tr>`;
+            tableBody.innerHTML += row;
+        });
+    </script>
+</body>
+</html>
