@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Rauf's RMI - Master Copy (Left Rose)</title>
+    <style>
+        body { background: #1a1a1b; color: #00ff00; font-family: 'Courier New', monospace; text-align: center; margin: 0; overflow: hidden; touch-action: manipulation; }
+        #task-panel { padding: 10px; background: #222; border-bottom: 3px solid #444; height: 100px; }
+        #task-text { font-size: 1.8em; color: #fff; font-weight: bold; margin: 5px 0; }
+        #status-text { font-size: 0.9em; color: #aaa; }
+        .instrument-container { display: flex; justify-content: center; align-items: center; height: 38vh; padding: 10px; }
+        .bezel { position: relative; width: 310px; height: 310px; border: 12px solid #222; border-radius: 40px; background: #000; }
+        #compass-card { position: absolute; top: 5px; left: 5px; width: 300px; height: 300px; border-radius: 50%; background: #080808; }
+        .tick { position: absolute; width: 100%; height: 100%; text-align: center; }
+        .tick-thick { border-top: 14px solid #fff; width: 4px; left: calc(50% - 2px); position: absolute; top: 0; }
+        .tick-thin { border-top: 7px solid #bbb; width: 2px; left: calc(50% - 1px); position: absolute; top: 0; }
+        .tick-label { position: absolute; top: 20px; width: 100%; color: #fff; font-weight: bold; font-size: 1.1em; }
+        #top-index { position: absolute; top: -5px; left: 50%; transform: translateX(-50%); width: 0; height: 0; border-left: 12px solid transparent; border-right: 12px solid transparent; border-top: 18px solid white; z-index: 30; }
+        #dme-display { position: absolute; top: 65%; left: 50%; transform: translateX(-50%); color: #fff; font-size: 1.4em; z-index: 26; background: rgba(0,0,0,0.8); padding: 2px 10px; border-radius: 4px; border: 1px solid #444; }
+        #rmi-needle { position: absolute; top: 50%; left: 50%; width: 10px; height: 260px; background: #ffee00; transform-origin: 50% 50%; margin-left: -5px; margin-top: -130px; clip-path: polygon(50% 0%, 0% 18%, 45% 18%, 45% 100%, 55% 100%, 55% 18%, 100% 18%); z-index: 25; }
+        
+        /* Controls */
+        #control-region { padding: 10px; background: #111; border-top: 2px solid #333; }
+        #yoke-slider { width: 85%; height: 60px; cursor: pointer; -webkit-appearance: none; background: #333; border-radius: 10px; outline: none; }
+        #yoke-slider::-webkit-slider-thumb { -webkit-appearance: none; width: 50px; height: 60px; background: #00ff00; border-radius: 5px; border: 2px solid #fff; }
+        #digital-win { background: #000; border: 2px solid #00ff00; padding: 4px; width: 90px; margin: 5px auto; font-size: 1.6em; border-radius: 8px; }
+        .btn-row { display: flex; justify-content: center; gap: 8px; margin-top: 5px; }
+        button { padding: 12px 18px; font-size: 0.9em; font-weight: bold; border: none; border-radius: 8px; cursor: pointer; color: white; min-width: 80px; }
+        #start-btn { background: #006400; width: 140px; font-size: 1.3em; }
+        #pause-btn { background: #d4a017; color: black; }
+        #reset-btn { background: #8b0000; }
+
+        /* Enhanced Static Compass Rose on LEFT */
+        #compass-rose { position: absolute; bottom: 15px; left: 15px; width: 100px; height: 100px; border: 2px solid #666; border-radius: 50%; background: #ccc; z-index: 50; box-shadow: 0 0 10px rgba(0,0,0,0.5); }
+        .rose-label { position: absolute; width: 100%; text-align: center; color: #222; font-weight: bold; font-size: 0.9em; }
+        .rose-line { position: absolute; background: #888; }
+    </style>
+</head>
+<body>
+
+<div id="task-panel">
+    <div id="task-text">MASTER READY</div>
+    <div id="status-text">Speed: 0.04 | Start: 10.0 NM</div>
+</div>
+
+<div class="instrument-container">
+    <div class="bezel">
+        <div id="top-index"></div>
+        <div id="compass-card"></div>
+        <div id="dme-display">DME <span id="dist-num">10.0</span></div>
+        <div id="rmi-needle"></div>
+    </div>
+</div>
+
+<div id="control-region">
+    <div id="digital-win"><span id="hdg-num">000</span>°</div>
+    <input type="range" id="yoke-slider" min="-100" max="100" value="0">
+    <div style="display:flex; justify-content: space-between; width: 85%; margin: 2px auto; color: #666; font-size: 0.7em;">
+        <span>L BANK</span><span>NEUTRAL</span><span>R BANK</span>
+    </div>
+    <div class="btn-row" id="main-controls" style="display:none;">
+        <button id="pause-btn">PAUSE</button>
+        <button id="reset-btn">RESET</button>
+    </div>
+    <button id="start-btn">ENGAGE</button>
+</div>
+
+<div id="compass-rose">
+    <div class="rose-label" style="top:2px;">0</div>
+    <div class="rose-label" style="top:40px; right:5px; width:auto;">90</div>
+    <div class="rose-label" style="bottom:2px;">180</div>
+    <div class="rose-label" style="top:40px; left:5px; width:auto;">270</div>
+    <div class="rose-line" style="top:50%; left:10%; width:80%; height:1px;"></div>
+    <div class="rose-line" style="left:50%; top:10%; height:80%; width:1px;"></div>
+</div>
+
+<script>
+    let aircraftHdg = 0; 
+    let targetHdg = 0;
+    let planeX = 0, planeY = 100; 
+    const stationX = 0, stationY = 0; 
+    let missionType = "intercept"; 
+    let targetVal = 0;
+    let achievementCounter = 0;
+    let isRunning = false;
+    let isPaused = false;
+
+    const card = document.getElementById('compass-card');
+    const needle = document.getElementById('rmi-needle');
+    const display = document.getElementById('hdg-num');
+    const dmeDisplay = document.getElementById('dist-num');
+    const taskText = document.getElementById('task-text');
+    const statusText = document.getElementById('status-text');
+    const yoke = document.getElementById('yoke-slider');
+    const btnStart = document.getElementById('start-btn');
+    const btnPause = document.getElementById('pause-btn');
+    const btnReset = document.getElementById('reset-btn');
+
+    for (let i = 0; i < 360; i += 5) {
+        const wrap = document.createElement('div');
+        wrap.className = 'tick'; wrap.style.transform = `rotate(${i}deg)`;
+        const mark = document.createElement('div');
+        if (i % 30 === 0) {
+            mark.className = 'tick-thick';
+            const label = document.createElement('div');
+            label.className = 'tick-label';
+            const val = i / 10;
+            label.innerText = (i===0)?'N':(i===90)?'E':(i===180)?'S':(i===270)?'W':val;
+            wrap.appendChild(label);
+        } else { mark.className = 'tick-thin'; }
+        wrap.appendChild(mark);
+        card.appendChild(wrap);
+    }
+
+    const stopYoke = () => { yoke.value = 0; };
+    yoke.addEventListener('touchend', stopYoke);
+    yoke.addEventListener('mouseup', stopYoke);
+
+    function resetFlight() {
+        let startAngle = Math.random() * Math.PI * 2;
+        planeX = Math.cos(startAngle) * 100;
+        planeY = Math.sin(startAngle) * 100;
+        aircraftHdg = Math.floor(Math.random() * 360);
+        targetHdg = aircraftHdg;
+        isPaused = false;
+        btnPause.innerText = "PAUSE";
+        yoke.value = 0;
+        getNewMission();
+    }
+
+    function getNewMission() {
+        if(Math.random() > 0.5) {
+            missionType = "intercept";
+            targetVal = Math.floor(Math.random() * 360);
+            taskText.innerText = "INBOUND: " + targetVal.toString().padStart(3, '0') + "°";
+        } else {
+            missionType = "arc";
+            targetVal = Math.floor(Math.random() * 3) + 5; 
+            taskText.innerText = "FLY ARC: " + targetVal + " NM";
+        }
+        taskText.style.color = "#fff";
+        achievementCounter = 0;
+    }
+
+    function animate() {
+        if (!isRunning) return;
+
+        if (!isPaused) {
+            let bankValue = parseFloat(yoke.value);
+            targetHdg += (bankValue / 150); 
+            targetHdg = (targetHdg + 360) % 360;
+
+            let diff = targetHdg - aircraftHdg;
+            if (diff > 180) diff -= 360;
+            if (diff < -180) diff += 360;
+            aircraftHdg = (aircraftHdg + diff * 0.02 + 360) % 360;
+
+            const speed = 0.04; 
+            const rad = (aircraftHdg - 90) * (Math.PI / 180);
+            planeX += Math.cos(rad) * speed;
+            planeY += Math.sin(rad) * speed;
+
+            let dx = stationX - planeX;
+            let dy = stationY - planeY;
+            let distance = Math.sqrt(dx*dx + dy*dy) / 10; 
+            let bearingToStation = (Math.atan2(dy, dx) * 180 / Math.PI + 90 + 360) % 360;
+
+            card.style.transform = `rotate(${-aircraftHdg}deg)`;
+            let visualNeedleRot = (bearingToStation - aircraftHdg + 360) % 360;
+            needle.style.transform = `rotate(${visualNeedleRot}deg)`;
+            
+            display.innerText = Math.round(aircraftHdg).toString().padStart(3, '0');
+            dmeDisplay.innerText = distance.toFixed(1);
+
+            let success = false;
+            if (missionType === "intercept") {
+                success = Math.abs(aircraftHdg - targetVal) < 5 && Math.abs(visualNeedleRot) < 5;
+            } else {
+                let onDistance = Math.abs(distance - targetVal) < 0.3;
+                let onWingtip = Math.abs(visualNeedleRot - 90) < 10 || Math.abs(visualNeedleRot - 270) < 10;
+                success = onDistance && onWingtip;
+            }
+
+            if (success) {
+                achievementCounter++;
+                if (achievementCounter > 150) { 
+                    taskText.innerText = "CAPTURED";
+                    taskText.style.color = "cyan";
+                    achievementCounter = -400; 
+                    setTimeout(getNewMission, 2500);
+                }
+            } else { achievementCounter = 0; }
+        }
+        requestAnimationFrame(animate);
+    }
+
+    btnStart.onclick = () => {
+        isRunning = true;
+        btnStart.style.display = 'none';
+        document.getElementById('main-controls').style.display = 'flex';
+        resetFlight();
+        animate();
+    };
+
+    btnPause.onclick = () => {
+        isPaused = !isPaused;
+        btnPause.innerText = isPaused ? "RESUME" : "PAUSE";
+        statusText.innerText = isPaused ? "SYSTEM FROZEN" : "Speed: 0.04 | Start: 10.0 NM";
+    };
+
+    btnReset.onclick = () => {
+        resetFlight();
+    };
+</script>
+</body>
+</html>
