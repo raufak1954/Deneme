@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <style>
+        body { font-family: Arial, sans-serif; background: #f0f2f5; padding: 20px; font-weight: bold; }
+        table { width: 100%; max-width: 700px; border-collapse: collapse; background: white; }
+        th, td { padding: 10px; border: 1px solid #ddd; text-align: center; text-transform: uppercase; }
+        th { background: #007bff; color: white; }
+    </style>
+</head>
+<body>
+
+<h3><b>SELIMIYE 16-DAY FORECAST</b></h3>
+<table>
+    <thead>
+        <tr>
+            <th><b>DAY</b></th>
+            <th><b>MAX/MIN</b></th>
+            <th><b>RAIN</b></th>
+            <th><b>GUSTS</b></th>
+        </tr>
+    </thead>
+    <tbody id="data-rows"></tbody>
+</table>
+
+<script>
+    const lat = 36.70;
+    const lon = 28.11;
+    const days = ["SUNDAY", "MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY", "SATURDAY"];
+    const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&daily=temperature_2m_max,temperature_2m_min,precipitation_sum,wind_gusts_10m_max&wind_speed_unit=kn&timezone=auto&forecast_days=16`;
+
+    fetch(url)
+        .then(res => res.json())
+        .then(data => {
+            let rows = "";
+            const d = data.daily;
+            for (let i = 0; i < d.time.length; i++) {
+                const dateObj = new Date(d.time[i]);
+                const dayName = days[dateObj.getDay()];
+                
+                rows += `<tr>
+                    <td><b>${dayName}</b></td>
+                    <td><b>${Math.round(d.temperature_2m_max[i])} / ${Math.round(d.temperature_2m_min[i])}</b></td>
+                    <td><b>${Math.round(d.precipitation_sum[i])}</b></td>
+                    <td><b>${Math.round(d.wind_gusts_10m_max[i])}</b></td>
+                </tr>`;
+            }
+            document.getElementById('data-rows').innerHTML = rows;
+        });
+</script>
+
+</body>
+</html>
