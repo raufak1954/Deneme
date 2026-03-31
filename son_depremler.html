@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <style>
+        body { font-family: Arial, sans-serif; background: #f4f4f9; padding: 20px; font-weight: bold; }
+        .container { max-width: 800px; margin: auto; }
+        table { width: 100%; border-collapse: collapse; background: white; margin-top: 20px; }
+        th, td { padding: 12px; border: 1px solid #000; text-align: center; text-transform: uppercase; }
+        th { background: #dc3545; color: white; }
+        .status { padding: 10px; background: #fff; border: 1px solid #000; margin-bottom: 10px; }
+        h3 { text-transform: uppercase; border-bottom: 2px solid #dc3545; padding-bottom: 5px; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h3><b>SELIMIYE REGIONAL SEISMIC MONITOR (200KM)</b></h3>
+    <div id="status" class="status">FETCHING DATA...</div>
+    <table>
+        <thead>
+            <tr>
+                <th><b>MAGNITUDE</b></th>
+                <th><b>LOCATION</b></th>
+                <th><b>DEPTH (KM)</b></th>
+                <th><b>DATE</b></th>
+            </tr>
+        </thead>
+        <tbody id="quake-rows"></tbody>
+    </table>
+</div>
+
+<script>
+    const lat = 36.70;
+    const lon = 28.11;
+    const radius = 200; // Kilometers
+    const minMag = 2.5;
+
+    // Fetch quakes from the last 30 days
+    const date = new Date();
+    date.setDate(date.getDate() - 30);
+    const startTime = date.toISOString().split('T')[0];
+
+    const url = `https://earthquake.usgs.gov/fdsnws/event/1/query?format=geojson&latitude=${lat}&longitude=${lon}&maxradiuskm=${radius}&minmagnitude=${minMag}&starttime=${startTime}&orderby=time`;
+
+    fetch(url)
+        .then(res => res.json())
+        .then(data => {
+            const count = data.features.length;
+            document.getElementById('status').innerHTML = `FOUND ${count} EVENTS IN THE LAST 30 DAYS.`;
+            
+            let rows = "";
+            data.features.forEach(quake => {
+                const props = quake.properties;
+                const coords = quake.geometry.coordinates; // [lon, lat, depth]
+                const qDate = new Date(props.time).toLocaleDateString();
+                
+                rows += `<tr>
+                    <td style="color: ${props.mag >= 4 ? 'red' : 'black'}"><b>${props.mag.toFixed(1)}</b></td>
+                    <td><b>${props.place}</b></td>
+                    <td><b>${coords[2].toFixed(1)}</b></td>
+                    <td><b>${qDate}</b></td>
+                </tr>`;
+            });
+            document.getElementById('quake-rows').innerHTML = rows;
+        })
+        .catch(err => {
+            document.getElementById('status').innerHTML = "ERROR FETCHING SEISMIC DATA.";
+        });
+</script>
+
+</body>
+</html>
