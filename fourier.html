@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Fourier Spectrum Analyzer V5</title>
+    <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <style>
+        body { font-family: sans-serif; text-align: center; background: #f4f4f4; color: #333; margin: 0; padding: 10px; }
+        .container { display: flex; flex-direction: column; align-items: center; gap: 10px; }
+        canvas { background: white; border: 2px solid #333; border-radius: 4px; display: block; margin: 5px auto; }
+        .controls { padding: 10px; background: #fff; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); width: 500px; }
+        .label-text { font-weight: bold; font-size: 14px; color: #555; }
+        input[type=range] { width: 100%; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="controls">
+        <div class="label-text">Signal Sine Frequency: <span id="sigVal">3.00</span> Hz</div>
+        <input type="range" id="sigSlider" min="1" max="10" step="0.1" value="3">
+        
+        <div class="label-text" style="margin-top:10px;">Winding Frequency ($f_w$): <span id="freqVal">1.00</span> Hz</div>
+        <input type="range" id="freqSlider" min="0" max="10" step="0.01" value="1">
+    </div>
+
+    <div class="label-text">1. Time Domain (Input Signal)</div>
+    <canvas id="timeCanvas" width="500" height="100"></canvas>
+
+    <div class="label-text">2. Winding Machine (Circular Wrap)</div>
+    <canvas id="windingCanvas" width="500" height="300"></canvas>
+
+    <div class="label-text">3. Frequency Domain (Fourier Transform)</div>
+    <canvas id="freqCanvas" width="500" height="120"></canvas>
+</div>
+
+<script>
+    const tCtx = document.getElementById('timeCanvas').getContext('2d');
+    const wCtx = document.getElementById('windingCanvas').getContext('2d');
+    const fCtx = document.getElementById('freqCanvas').getContext('2d');
+    
+    const sigSlider = document.getElementById('sigSlider');
+    const freqSlider = document.getElementById('freqSlider');
+    const sigVal = document.getElementById('sigVal');
+    const freqVal = document.getElementById('freqVal');
+
+    const centerX = 250, centerY = 150;
+    const duration = 2; 
+    const points = 1000;
+
+    function draw() {
+        const s_f = parseFloat(sigSlider.value);
+        const f_w = parseFloat(freqSlider.value);
+        sigVal.innerText = s_f.toFixed(2);
+        freqVal.innerText = f_w.toFixed(2);
+        
+        tCtx.clearRect(0, 0, 500, 100);
+        wCtx.clearRect(0, 0, 500, 300);
+        fCtx.clearRect(0, 0, 500, 120);
+
+        // --- 1. Time Domain ---
+        tCtx.strokeStyle = '#2c3e50';
+        tCtx.beginPath();
+        for (let i = 0; i < points; i++) {
+            let t = (i / points) * duration;
+            let y = 50 - (Math.sin(2 * Math.PI * s_f * t) * 30);
+            if (i === 0) tCtx.moveTo((t/duration)*500, y);
+            else tCtx.lineTo((t/duration)*500, y);
+        }
+        tCtx.stroke();
+
+        // --- 2. Winding Machine ---
+        let sumX = 0, sumY = 0;
+        wCtx.beginPath();
+        wCtx.strokeStyle = '#3498db';
+        for (let i = 0; i < points; i++) {
+            let t = (i / points) * duration;
+            let r = (Math.sin(2 * Math.PI * s_f * t) + 1.5) * 40; 
+            let theta = -2 * Math.PI * f_w * t;
+            let x = centerX + r * Math.cos(theta);
+            let y = centerY + r * Math.sin(theta);
+            if (i === 0) wCtx.moveTo(x, y); else wCtx.lineTo(x, y);
+            sumX += x; sumY += y;
+        }
+        wCtx.stroke();
+
+        const comX = sumX / points, comY = sumY / points;
+        wCtx.strokeStyle = 'red'; wCtx.lineWidth = 2;
+        wCtx.beginPath(); wCtx.moveTo(centerX, centerY); wCtx.lineTo(comX, comY); wCtx.stroke();
+        wCtx.fillStyle = 'red'; wCtx.beginPath(); wCtx.arc(comX, comY, 5, 0, Math.PI*2); wCtx.fill();
+
+        // --- 3. Frequency Domain ---
+        fCtx.strokeStyle = '#bdc3c7';
+        fCtx.beginPath(); fCtx.moveTo(0, 100); fCtx.lineTo(500, 100); fCtx.stroke();
+        
+        fCtx.beginPath();
+        fCtx.strokeStyle = '#e67e22';
+        for (let fw_scan = 0; fw_scan <= 10; fw_scan += 0.1) {
+            let sX = 0, sY = 0;
+            for (let i = 0; i < 400; i++) {
+                let t = (i / 400) * duration;
+                let r = Math.sin(2 * Math.PI * s_f * t);
+                sX += r * Math.cos(-2 * Math.PI * fw_scan * t);
+                sY += r * Math.sin(-2 * Math.PI * fw_scan * t);
+            }
+            let magnitude = Math.sqrt((sX/400)**2 + (sY/400)**2);
+            let xPos = (fw_scan / 10) * 500;
+            let yPos = 100 - (magnitude * 150);
+            if (fw_scan === 0) fCtx.moveTo(xPos, yPos); else fCtx.lineTo(xPos, yPos);
+        }
+        fCtx.stroke();
+
+        // Current frequency marker
+        fCtx.fillStyle = 'red';
+        fCtx.fillRect((f_w/10)*500 - 1, 0, 2, 100);
+
+        requestAnimationFrame(draw);
+    }
+
+    sigSlider.addEventListener('input', draw);
+    freqSlider.addEventListener('input', draw);
+    draw();
+</script>
+</body>
+</html>
