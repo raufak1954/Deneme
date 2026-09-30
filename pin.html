@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Non-Rotating Pin & Axle Sizing Calculator (Von Mises)</title>
+    <!-- Tailwind CSS for modern responsive styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+    </style>
+</head>
+<body class="bg-slate-900 text-slate-100 min-h-screen py-8 px-4 sm:px-6 lg:px-8">
+
+    <div class="max-w-5xl mx-auto space-y-8">
+        
+        <!-- Header -->
+        <header class="text-center space-y-2">
+            <div class="inline-flex items-center space-x-2 bg-blue-500/10 text-blue-400 px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wider border border-blue-500/20">
+                Non-Rotating Pins & Axles • No Torsion
+            </div>
+            <h1 class="text-3xl sm:text-4xl font-extrabold text-white tracking-tight">
+                Pin & Axle Sizing Calculator
+            </h1>
+            <p class="text-slate-400 text-sm sm:text-base max-w-2xl mx-auto">
+                Evaluates bending moment (M) and transverse shear force (V) from SFD/BMD using Von Mises yield criteria across outer fiber and neutral axis.
+            </p>
+        </header>
+
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+            
+            <!-- Input Form Panel -->
+            <div class="lg:col-span-6 bg-slate-800/80 border border-slate-700/60 rounded-2xl p-6 shadow-xl space-y-5">
+                <h2 class="text-lg font-bold text-slate-200 border-b border-slate-700/60 pb-3 flex items-center justify-between">
+                    <span>Input Parameters</span>
+                    <span class="text-xs text-blue-400 font-mono">Units: kgf, cm</span>
+                </h2>
+
+                <form id="calc-form" class="space-y-4" onsubmit="event.preventDefault();">
+                    
+                    <!-- Bending Moment M -->
+                    <div>
+                        <label for="input-M" class="block text-xs font-medium text-slate-300 mb-1">
+                            Bending Moment, M (kgf·cm)
+                        </label>
+                        <input type="number" id="input-M" value="12000" step="any" min="0" required
+                            class="w-full bg-slate-900 border border-slate-700 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 rounded-lg py-2 px-3 text-slate-100 text-sm">
+                    </div>
+
+                    <!-- Transverse Shear Force V -->
+                    <div>
+                        <div class="flex items-center justify-between mb-1">
+                            <label for="input-V" class="block text-xs font-medium text-amber-400">
+                                Transverse Shear Force, V (kgf)
+                            </label>
+                            <span class="text-[10px] text-slate-400">Neutral axis check</span>
+                        </div>
+                        <input type="number" id="input-V" value="35000" step="any" min="0" required
+                            class="w-full bg-slate-900 border border-amber-500/50 focus:border-amber-500 focus:ring-1 focus:ring-amber-500 rounded-lg py-2 px-3 text-slate-100 text-sm font-semibold">
+                    </div>
+
+                    <!-- Material Strengths -->
+                    <div class="grid grid-cols-2 gap-3 pt-1">
+                        <div>
+                            <label for="input-sigu" class="block text-xs font-medium text-slate-300 mb-1">
+                                Ultimate Strength, &sigma;<sub>u</sub> (kgf/cm²)
+                            </label>
+                            <input type="number" id="input-sigu" value="6000" step="any" min="1" required
+                                class="w-full bg-slate-900 border border-slate-700 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 rounded-lg py-2 px-3 text-slate-100 text-sm">
+                        </div>
+                        <div>
+                            <label for="input-fy" class="block text-xs font-medium text-slate-300 mb-1">
+                                Yield Strength, f<sub>y</sub> (kgf/cm²)
+                            </label>
+                            <input type="number" id="input-fy" value="3600" step="any" min="1" required
+                                class="w-full bg-slate-900 border border-slate-700 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 rounded-lg py-2 px-3 text-slate-100 text-sm">
+                        </div>
+                    </div>
+
+                    <!-- Load Category Selection -->
+                    <div>
+                        <label class="block text-xs font-medium text-slate-300 mb-2">
+                            Operating Load Category
+                        </label>
+                        <div class="space-y-2 text-xs">
+                            <label class="flex items-start p-2 bg-slate-900/60 border border-slate-700/80 rounded-lg cursor-pointer hover:bg-slate-700/30 transition-colors">
+                                <input type="radio" name="category" value="1" checked class="mt-0.5 text-blue-600 border-slate-700 bg-slate-800">
+                                <div class="ml-2.5">
+                                    <span class="font-semibold text-slate-200 block">Category I: Static Load (Ratio = 3.8)</span>
+                                    <span class="text-slate-400">Fixed non-rotating pin under constant load (Capped at 0.8·f<sub>y</sub>).</span>
+                                </div>
+                            </label>
+
+                            <label class="flex items-start p-2 bg-slate-900/60 border border-slate-700/80 rounded-lg cursor-pointer hover:bg-slate-700/30 transition-colors">
+                                <input type="radio" name="category" value="2" class="mt-0.5 text-blue-600 border-slate-700 bg-slate-800">
+                                <div class="ml-2.5">
+                                    <span class="font-semibold text-slate-200 block">Category II: Pulsating Load (Ratio = 1.7)</span>
+                                    <span class="text-slate-400">Unidirectional load fluctuating from zero to maximum.</span>
+                                </div>
+                            </label>
+
+                            <label class="flex items-start p-2 bg-slate-900/60 border border-slate-700/80 rounded-lg cursor-pointer hover:bg-slate-700/30 transition-colors">
+                                <input type="radio" name="category" value="3" class="mt-0.5 text-blue-600 border-slate-700 bg-slate-800">
+                                <div class="ml-2.5">
+                                    <span class="font-semibold text-slate-200 block">Category III: Fully Reversed Cycle (Ratio = 1.0)</span>
+                                    <span class="text-slate-400">Force completely reverses direction (+V to -V / +M to -M).</span>
+                                </div>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Hollow Option -->
+                    <div class="border-t border-slate-700/60 pt-3">
+                        <label class="flex items-center space-x-2 cursor-pointer text-xs font-medium text-slate-300">
+                            <input type="checkbox" id="check-hollow" class="rounded border-slate-700 bg-slate-800 text-blue-600">
+                            <span>Calculate Hollow Pin (&beta; = d<sub>in</sub> / d<sub>out</sub>)</span>
+                        </label>
+                        
+                        <div id="hollow-input-box" class="hidden mt-2">
+                            <label for="input-beta" class="block text-xs font-medium text-slate-400 mb-1">
+                                Diameter Ratio, &beta; (d<sub>in</sub> / d<sub>out</sub>):
+                            </label>
+                            <input type="number" id="input-beta" value="0.5" step="0.05" min="0.1" max="0.9"
+                                class="w-full bg-slate-900 border border-slate-700 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 rounded-lg py-1.5 px-3 text-slate-100 text-xs">
+                        </div>
+                    </div>
+
+                </form>
+            </div>
+
+            <div class="lg:col-span-6 space-y-6">
+                
+                <div class="bg-slate-800/80 border border-slate-700/60 rounded-2xl p-6 shadow-xl space-y-5">
+                    
+                    <!-- Header Badges -->
+                    <div class="flex items-center justify-between border-b border-slate-700/60 pb-3">
+                        <h2 class="text-lg font-bold text-slate-200">
+                            Design Summary
+                        </h2>
+                        
+                        <!-- Governing Badges -->
+                        <div id="badge-bending" class="hidden bg-blue-500/20 text-blue-400 border border-blue-500/40 px-2.5 py-1 rounded-md text-xs font-bold">
+                            🔵 Bending (Outer Fiber) Governs
+                        </div>
+                        <div id="badge-shear" class="hidden bg-amber-500/20 text-amber-400 border border-amber-500/40 px-2.5 py-1 rounded-md text-xs font-bold">
+                            ⚠️ Direct Shear (Neutral Axis) Governs
+                        </div>
+                    </div>
+
+                    <!-- Individual Stress Check Diameter Cards -->
+                    <div class="grid grid-cols-2 gap-3">
+                        <!-- Outer Fiber Bending Check -->
+                        <div class="bg-slate-900/60 border border-slate-700/80 rounded-xl p-3 text-center">
+                            <span class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider block">Outer Fiber (Bending M)</span>
+                            <div class="text-xl font-extrabold text-blue-400 py-1">
+                                <span id="out-d-bending-cm">0.00</span> <span class="text-xs text-slate-400 font-normal">cm</span>
+                            </div>
+                            <div class="text-[11px] font-medium text-slate-400">
+                                (<span id="out-d-bending-mm">0.0</span> mm)
+                            </div>
+                        </div>
+
+                        <!-- Neutral Axis Shear Check -->
+                        <div class="bg-slate-900/60 border border-slate-700/80 rounded-xl p-3 text-center">
+                            <span class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider block">Neutral Axis (Von Mises V)</span>
+                            <div class="text-xl font-extrabold text-amber-400 py-1">
+                                <span id="out-d-shear-cm">0.00</span> <span class="text-xs text-slate-400 font-normal">cm</span>
+                            </div>
+                            <div class="text-[11px] font-medium text-slate-400">
+                                (<span id="out-d-shear-mm">0.0</span> mm)
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Final Governing Diameter Card -->
+                    <div class="bg-gradient-to-r from-blue-900/50 via-indigo-900/50 to-slate-900/50 border border-blue-500/40 rounded-xl p-4 text-center">
+                        <span class="text-xs font-bold text-blue-300 uppercase tracking-widest block">Final Required Outer Diameter (d<sub>final</sub>)</span>
+                        <div class="text-3xl font-black text-white py-1">
+                            <span id="out-d-final-cm">0.00</span> <span class="text-base text-slate-300 font-normal">cm</span>
+                        </div>
+                        <div class="text-xs font-semibold text-slate-300">
+                            (<span id="out-d-final-mm">0.0</span> mm)
+                        </div>
+                    </div>
+
+                    <!-- Mathematical Breakdown Log -->
+                    <div class="space-y-2">
+                        <h3 class="text-xs font-semibold text-slate-300 uppercase tracking-wider flex items-center justify-between">
+                            <span>Step-by-Step Math Breakdown</span>
+                            <span class="text-[10px] text-blue-400 font-mono">Von Mises Proof</span>
+                        </h3>
+                        
+                        <div id="breakdown-log" class="bg-slate-900/90 rounded-lg p-3 text-xs font-mono text-slate-300 leading-relaxed space-y-2 border border-slate-700/80 overflow-x-auto max-h-[350px] overflow-y-auto">
+                            <!-- Filled dynamically by JS -->
+                        </div>
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+        <!-- Footer -->
+        <footer class="text-center text-xs text-slate-500">
+            Soviet Machine Elements Standard (Mir Publications) • Pure Pin & Axle Von Mises Sizing Module
+        </footer>
+
+    </div>
+
+    <script>
+        // DOM Input Elements
+        const inputM = document.getElementById('input-M');
+        const inputV = document.getElementById('input-V');
+        const inputSigu = document.getElementById('input-sigu');
+        const inputFy = document.getElementById('input-fy');
+        const checkHollow = document.getElementById('check-hollow');
+        const hollowInputBox = document.getElementById('hollow-input-box');
+        const inputBeta = document.getElementById('input-beta');
+
+        // DOM Output Elements
+        const outDBendingCm = document.getElementById('out-d-bending-cm');
+        const outDBendingMm = document.getElementById('out-d-bending-mm');
+        const outDShearCm = document.getElementById('out-d-shear-cm');
+        const outDShearMm = document.getElementById('out-d-shear-mm');
+        const outDFinalCm = document.getElementById('out-d-final-cm');
+        const outDFinalMm = document.getElementById('out-d-final-mm');
+
+        const badgeBending = document.getElementById('badge-bending');
+        const badgeShear = document.getElementById('badge-shear');
+        const breakdownLog = document.getElementById('breakdown-log');
+
+        // Toggle Hollow Options
+        checkHollow.addEventListener('change', () => {
+            if (checkHollow.checked) {
+                hollowInputBox.classList.remove('hidden');
+            } else {
+                hollowInputBox.classList.add('hidden');
+            }
+            calculatePin();
+        });
+
+        // Automatically default Yield = 0.6 * Ultimate on user change
+        inputSigu.addEventListener('input', () => {
+            const siguVal = parseFloat(inputSigu.value) || 0;
+            inputFy.value = Math.round(siguVal * 0.6);
+            calculatePin();
+        });
+
+        function calculatePin() {
+            // Read Inputs
+            const M = parseFloat(inputM.value) || 0;
+            const V = parseFloat(inputV.value) || 0;
+            const sigu = parseFloat(inputSigu.value) || 0;
+            const fy = parseFloat(inputFy.value) || 0;
+            const isHollow = checkHollow.checked;
+            const beta = isHollow ? (parseFloat(inputBeta.value) || 0.5) : 0;
+
+            const categoryRadio = document.querySelector('input[name="category"]:checked');
+            const catVal = categoryRadio ? categoryRadio.value : "1";
+
+            // 1. Calculate Base Category III Allowable Stress
+            const sigIII = 0.33 * sigu;
+
+            // 2. Calculate Allowable Stress According to Mir Category & Apply Yield Cap
+            let catName = "";
+            let catRatio = 1.0;
+            let rawSigAllow = sigIII;
+            let finalSigAllow = sigIII;
+            let isCapped = false;
+            const maxAllowedCap = 0.8 * fy;
+
+            if (catVal === "1") {
+                catName = "Category I (Static Load)";
+                catRatio = 3.8;
+                rawSigAllow = 3.8 * sigIII;
+                if (rawSigAllow > maxAllowedCap) {
+                    finalSigAllow = maxAllowedCap;
+                    isCapped = true;
+                } else {
+                    finalSigAllow = rawSigAllow;
+                }
+            } else if (catVal === "2") {
+                catName = "Category II (Pulsating Load)";
+                catRatio = 1.7;
+                rawSigAllow = 1.7 * sigIII;
+                if (rawSigAllow > maxAllowedCap) {
+                    finalSigAllow = maxAllowedCap;
+                    isCapped = true;
+                } else {
+                    finalSigAllow = rawSigAllow;
+                }
+            } else {
+                catName = "Category III (Fully Reversed Cycle)";
+                catRatio = 1.0;
+                rawSigAllow = 1.0 * sigIII;
+                finalSigAllow = rawSigAllow;
+            }
+
+            // 3. Outer Fiber Check (r = R) - Bending Moment M
+            // sigma_x = M / (0.1 * (1 - beta^4) * d^3)
+            // Von Mises: sigma_vm = sqrt(sigma_x^2 + 0) = sigma_x <= [sigma]
+            let dBending = 0;
+            const hollowBendingFactor = 1 - Math.pow(beta, 4);
+            if (finalSigAllow > 0) {
+                dBending = Math.cbrt(M / (0.1 * hollowBendingFactor * finalSigAllow));
+            }
+
+            // 4. Neutral Axis Check (r = 0) - Transverse Shear V (Von Mises Criteria)
+            // sigma_x = 0
+            // Solid: tau_max = 16*V / (3*pi*d^2)
+            // Hollow: tau_max = (4*V / (3*A)) * ((1 + 2*beta) / (1 + beta^2))
+            // Von Mises: sigma_vm = sqrt(3) * tau_max <= [sigma]
+            let dShear = 0;
+            if (finalSigAllow > 0) {
+                if (isHollow) {
+                    // Hollow Area: A = (pi/4) * d^2 * (1 - beta^2)
+                    // tau_max = (16 * V) / (3 * pi * d^2 * (1 - beta^2)) * ((1 + 2*beta)/(1 + beta^2))
+                    // sigma_vm = sqrt(3) * tau_max <= [sigma]
+                    // d_shear^2 = (16 * sqrt(3) * V * (1 + 2*beta)) / (3 * pi * (1 - beta^2) * (1 + beta^2) * [sigma])
+                    const num = 16 * Math.sqrt(3) * V * (1 + 2 * beta);
+                    const den = 3 * Math.PI * (1 - Math.pow(beta, 2)) * (1 + Math.pow(beta, 2)) * finalSigAllow;
+                    if (den > 0) {
+                        dShear = Math.sqrt(num / den);
+                    }
+                } else {
+                    // Solid: d_shear = sqrt( (16 * sqrt(3) * V) / (3 * pi * [sigma]) )
+                    const num = 16 * Math.sqrt(3) * V;
+                    const den = 3 * Math.PI * finalSigAllow;
+                    if (den > 0) {
+                        dShear = Math.sqrt(num / den);
+                    }
+                }
+            }
+
+            // 5. Determine Final Governing Diameter
+            const dFinal = Math.max(dBending, dShear);
+            const shearGoverns = dShear > dBending;
+
+            // Render Output Values
+            outDBendingCm.textContent = dBending.toFixed(2);
+            outDBendingMm.textContent = (dBending * 10).toFixed(1);
+
+            outDShearCm.textContent = dShear.toFixed(2);
+            outDShearMm.textContent = (dShear * 10).toFixed(1);
+
+            outDFinalCm.textContent = dFinal.toFixed(2);
+            outDFinalMm.textContent = (dFinal * 10).toFixed(1);
+
+            // Render Badges
+            if (shearGoverns && V > 0) {
+                badgeShear.classList.remove('hidden');
+                badgeBending.classList.add('hidden');
+            } else {
+                badgeBending.classList.remove('hidden');
+                badgeShear.classList.add('hidden');
+            }
+
+            // Render Step-by-Step Breakdown Log
+            let logHtml = '';
+
+            logHtml += `<div><span class="text-blue-400">[1] Allowable Stress ([sigma]) Calculation:</span><br>`;
+            logHtml += `Operating Mode: ${catName}<br>`;
+            logHtml += `Base [sigma]_III = 0.33 * sigma_u = 0.33 * ${sigu} = ${sigIII.toFixed(1)} kgf/cm²<br>`;
+            logHtml += `Raw [sigma] = ${catRatio} * ${sigIII.toFixed(1)} = ${rawSigAllow.toFixed(1)} kgf/cm²<br>`;
+            if (isCapped) {
+                logHtml += `<span class="text-amber-400">Raw stress exceeds Yield Cap limit (0.80 * f_y = ${maxAllowedCap.toFixed(1)}). Yield Cap applied!</span><br>`;
+            }
+            logHtml += `Applied Allowable Stress [sigma] = <span class="text-emerald-400 font-bold">${finalSigAllow.toFixed(1)} kgf/cm²</span></div>`;
+
+            logHtml += `<div class="pt-1 border-t border-slate-800"><span class="text-blue-400">[2] Outer Fiber Check (r = R, Bending M=${M} kgf·cm):</span><br>`;
+            logHtml += `sigma_x = M / (0.1 * ${isHollow ? '(1-beta^4) * ' : ''}d^3)<br>`;
+            logHtml += `Von Mises: sigma_vm = sqrt(sigma_x^2 + 3*(0)^2) = sigma_x <= [sigma]<br>`;
+            logHtml += `d_bending = ( ${M} / (0.1 * ${hollowBendingFactor.toFixed(4)} * ${finalSigAllow.toFixed(1)}) )^(1/3)<br>`;
+            logHtml += `d_bending = <span class="text-white font-bold">${dBending.toFixed(2)} cm (${(dBending*10).toFixed(1)} mm)</span></div>`;
+
+            logHtml += `<div class="pt-1 border-t border-slate-800"><span class="text-amber-400">[3] Neutral Axis Check (r = 0, Transverse Shear V=${V} kgf):</span><br>`;
+            logHtml += `sigma_x = 0, tau_max = ${isHollow ? '(Hollow factor) * ' : ''}16*V / (3*pi*d^2)<br>`;
+            logHtml += `Von Mises: sigma_vm = sqrt(0 + 3*tau_max^2) = sqrt(3)*tau_max <= [sigma]<br>`;
+            if (isHollow) {
+                logHtml += `d_shear = sqrt( (16*sqrt(3)*V*(1+2*beta)) / (3*pi*(1-beta^4)*[sigma]) )<br>`;
+            } else {
+                logHtml += `d_shear = sqrt( (16*sqrt(3)*${V}) / (3*pi*${finalSigAllow.toFixed(1)}) )<br>`;
+            }
+            logHtml += `d_shear = <span class="text-white font-bold">${dShear.toFixed(2)} cm (${(dShear*10).toFixed(1)} mm)</span></div>`;
+
+            logHtml += `<div class="pt-1 border-t border-slate-800"><span class="text-emerald-400">[4] Governing Final Diameter:</span><br>`;
+            logHtml += `d_final = max(d_bending, d_shear) = max(${dBending.toFixed(2)}, ${dShear.toFixed(2)})<br>`;
+            logHtml += `Result = <span class="text-emerald-300 font-black text-sm">${dFinal.toFixed(2)} cm (${(dFinal*10).toFixed(1)} mm)</span> `;
+            if (shearGoverns) {
+                logHtml += `<span class="text-amber-400 font-bold">(Governed by Neutral Axis Transverse Shear V!)</span>`;
+            } else {
+                logHtml += `<span class="text-blue-300 font-bold">(Governed by Outer Fiber Bending M!)</span>`;
+            }
+            logHtml += `</div>`;
+
+            breakdownLog.innerHTML = logHtml;
+        }
+
+        // Attach recalculation event listeners
+        inputM.addEventListener('input', calculatePin);
+        inputV.addEventListener('input', calculatePin);
+        inputSigu.addEventListener('input', calculatePin);
+        inputFy.addEventListener('input', calculatePin);
+        inputBeta.addEventListener('input', calculatePin);
+        
+        document.querySelectorAll('input[name="category"]').forEach(radio => {
+            radio.addEventListener('change', calculatePin);
+        });
+
+        // Initialize on page load
+        window.addEventListener('load', calculatePin);
+    </script>
+</body>
+</html>
