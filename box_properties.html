@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Box Section Calculator</title>
+<style>
+  body {
+    font-family: Arial, sans-serif;
+    max-width: 650px;
+    margin: 20px auto;
+    padding: 20px;
+    background-color: #f4f6f8;
+    color: #333;
+  }
+  h2 {
+    text-align: center;
+    color: #2c3e50;
+  }
+  .container {
+    background: #fff;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  }
+  .form-group {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+  }
+  label {
+    flex: 1;
+    font-weight: bold;
+    font-size: 14px;
+  }
+  input {
+    width: 120px;
+    padding: 6px 10px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    font-size: 14px;
+    text-align: right;
+  }
+  button {
+    width: 100%;
+    padding: 10px;
+    background-color: #2980b9;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    font-size: 16px;
+    font-weight: bold;
+    cursor: pointer;
+    margin-top: 15px;
+  }
+  button:hover {
+    background-color: #1c5980;
+  }
+  .results {
+    margin-top: 20px;
+    border-collapse: collapse;
+    width: 100%;
+  }
+  .results th, .results td {
+    border: 1px solid #ddd;
+    padding: 8px 12px;
+    text-align: left;
+  }
+  .results th {
+    background-color: #ecf0f1;
+    color: #2c3e50;
+  }
+  .results td:last-child {
+    text-align: right;
+    font-weight: bold;
+  }
+  .unit-note {
+    font-size: 12px;
+    color: #666;
+    margin-bottom: 15px;
+    text-align: center;
+  }
+</style>
+</head>
+<body>
+
+<div class="container">
+  <h2>Box Section Properties</h2>
+  <div class="unit-note">Input dimensions in <strong>mm</strong> | Results output in <strong>cm, cm², cm³, cm⁴</strong></div>
+
+  <div class="form-group">
+    <label for="h">Overall Height, H (mm):</label>
+    <input type="number" id="h" step="any" placeholder="e.g. 300">
+  </div>
+  <div class="form-group">
+    <label for="b">Flange Width, B (mm):</label>
+    <input type="number" id="b" step="any" placeholder="e.g. 200">
+  </div>
+  <div class="form-group">
+    <label for="tf1">Top Flange Thickness, t_f1 (mm):</label>
+    <input type="number" id="tf1" step="any" placeholder="e.g. 10">
+  </div>
+  <div class="form-group">
+    <label for="tf2">Bottom Flange Thickness, t_f2 (mm):</label>
+    <input type="number" id="tf2" step="any" placeholder="e.g. 10">
+  </div>
+  <div class="form-group">
+    <label for="tw">Web Thickness, t_w (mm):</label>
+    <input type="number" id="tw" step="any" placeholder="e.g. 8">
+  </div>
+  <div class="form-group">
+    <label for="s">Outer Web-to-Web Distance, S (mm):</label>
+    <input type="number" id="s" step="any" placeholder="e.g. 200">
+  </div>
+
+  <button onclick="calculate()">Calculate Properties</button>
+
+  <table class="results">
+    <thead>
+      <tr>
+        <th>Property</th>
+        <th>Symbol</th>
+        <th>Value</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Cross-sectional Area</td>
+        <td>A (cm²)</td>
+        <td id="res_a">-</td>
+      </tr>
+      <tr>
+        <td>Centroid from Bottom</td>
+        <td>y_c (cm)</td>
+        <td id="res_yc">-</td>
+      </tr>
+      <tr>
+        <td>Moment of Inertia (X-Axis)</td>
+        <td>I_x (cm⁴)</td>
+        <td id="res_ix">-</td>
+      </tr>
+      <tr>
+        <td>Moment of Inertia (Y-Axis)</td>
+        <td>I_y (cm⁴)</td>
+        <td id="res_iy">-</td>
+      </tr>
+      <tr>
+        <td>Section Modulus - Top</td>
+        <td>S_x,top (cm³)</td>
+        <td id="res_sxtop">-</td>
+      </tr>
+      <tr>
+        <td>Section Modulus - Bottom</td>
+        <td>S_x,bot (cm³)</td>
+        <td id="res_sxbot">-</td>
+      </tr>
+      <tr>
+        <td>Section Modulus (Y-Axis)</td>
+        <td>S_y (cm³)</td>
+        <td id="res_sy">-</td>
+      </tr>
+      <tr>
+        <td>Radius of Gyration (X-Axis)</td>
+        <td>i_x (cm)</td>
+        <td id="res_rx">-</td>
+      </tr>
+      <tr>
+        <td>Radius of Gyration (Y-Axis)</td>
+        <td>i_y (cm)</td>
+        <td id="res_ry">-</td>
+      </tr>
+      <tr>
+        <td>Torsional Constant</td>
+        <td>J (cm⁴)</td>
+        <td id="res_j">-</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<script>
+function calculate() {
+  const H = parseFloat(document.getElementById('h').value) / 10;
+  const B = parseFloat(document.getElementById('b').value) / 10;
+  const tf1 = parseFloat(document.getElementById('tf1').value) / 10;
+  const tf2 = parseFloat(document.getElementById('tf2').value) / 10;
+  const tw = parseFloat(document.getElementById('tw').value) / 10;
+  const S = parseFloat(document.getElementById('s').value) / 10;
+
+  if (isNaN(H) || isNaN(B) || isNaN(tf1) || isNaN(tf2) || isNaN(tw) || isNaN(S) ||
+      H <= 0 || B <= 0 || tf1 <= 0 || tf2 <= 0 || tw <= 0 || S <= 0) {
+    alert("Please enter valid positive dimensions.");
+    return;
+  }
+
+  if (2 * tw >= S || (tf1 + tf2) >= H) {
+    alert("Invalid geometry: Wall thicknesses exceed overall dimensions.");
+    return;
+  }
+
+  const A_top = B * tf1;
+  const A_bot = B * tf2;
+  const hw = H - tf1 - tf2;
+  const A_web = 2 * (hw * tw);
+  const A = A_top + A_bot + A_web;
+
+  const y_top = H - tf1 / 2;
+  const y_bot = tf2 / 2;
+  const y_web = tf2 + hw / 2;
+  const yc = (A_top * y_top + A_bot * y_bot + A_web * y_web) / A;
+
+  const Ix_top = (B * Math.pow(tf1, 3)) / 12 + A_top * Math.pow(y_top - yc, 2);
+  const Ix_bot = (B * Math.pow(tf2, 3)) / 12 + A_bot * Math.pow(y_bot - yc, 2);
+  const Ix_web = 2 * ((tw * Math.pow(hw, 3)) / 12 + (tw * hw) * Math.pow(y_web - yc, 2));
+  const Ix = Ix_top + Ix_bot + Ix_web;
+
+  const Iy_top = (tf1 * Math.pow(B, 3)) / 12;
+  const Iy_bot = (tf2 * Math.pow(B, 3)) / 12;
+  const dist_web = (S - tw) / 2;
+  const Iy_web = 2 * ((hw * Math.pow(tw, 3)) / 12 + (hw * tw) * Math.pow(dist_web, 2));
+  const Iy = Iy_top + Iy_bot + Iy_web;
+
+  const Sx_top = Ix / (H - yc);
+  const Sx_bot = Ix / yc;
+  const y_outer_max = Math.max(B / 2, S / 2);
+  const Sy = Iy / y_outer_max;
+
+  const ix = Math.sqrt(Ix / A);
+  const iy = Math.sqrt(Iy / A);
+
+  const b_m = (B + (S - tw)) / 2;
+  const h_m = H - (tf1 + tf2) / 2;
+  const Am = b_m * h_m;
+  const t_avg_flange = (tf1 + tf2) / 2;
+  const ds = (2 * b_m / t_avg_flange) + (2 * h_m / tw);
+  const J = (4 * Math.pow(Am, 2)) / ds;
+
+  document.getElementById('res_a').innerText = A.toFixed(2);
+  document.getElementById('res_yc').innerText = yc.toFixed(2);
+  document.getElementById('res_ix').innerText = Ix.toFixed(2);
+  document.getElementById('res_iy').innerText = Iy.toFixed(2);
+  document.getElementById('res_sxtop').innerText = Sx_top.toFixed(2);
+  document.getElementById('res_sxbot').innerText = Sx_bot.toFixed(2);
+  document.getElementById('res_sy').innerText = Sy.toFixed(2);
+  document.getElementById('res_rx').innerText = ix.toFixed(2);
+  document.getElementById('res_ry').innerText = iy.toFixed(2);
+  document.getElementById('res_j').innerText = J.toFixed(2);
+}
+</script>
+
+</body>
+</html>
