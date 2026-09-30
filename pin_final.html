@@ -1,0 +1,836 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pin Connection Design Calculator (Table 2)</title>
+    <style>
+        :root {
+            --primary: #1e293b;
+            --primary-accent: #0284c7;
+            --bg-body: #f8fafc;
+            --card-bg: #ffffff;
+            --border-color: #e2e8f0;
+            --text-main: #0f172a;
+            --text-muted: #64748b;
+            --pass-bg: #dcfce7;
+            --pass-border: #22c55e;
+            --pass-text: #15803d;
+            --fail-bg: #ffe4e6;
+            --fail-border: #f43f5e;
+            --fail-text: #be123c;
+            --warning-bg: #fef3c7;
+            --warning-text: #b45309;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-body);
+            color: var(--text-main);
+            padding: 20px;
+            line-height: 1.5;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        header {
+            background-color: var(--primary);
+            color: white;
+            padding: 20px 24px;
+            border-radius: 12px;
+            margin-bottom: 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+
+        header h1 {
+            font-size: 22px;
+            font-weight: 700;
+        }
+
+        header p {
+            font-size: 13px;
+            color: #94a3b8;
+        }
+
+        .reset-btn {
+            background-color: #334155;
+            color: white;
+            border: 1px solid #475569;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 600;
+        }
+
+        .reset-btn:hover {
+            background-color: #475569;
+        }
+
+        .layout-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 24px;
+        }
+
+        @media (min-width: 900px) {
+            .layout-grid {
+                grid-template-columns: 420px 1fr;
+            }
+        }
+
+        .card {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+
+        .card-title {
+            font-size: 16px;
+            font-weight: 700;
+            margin-bottom: 16px;
+            padding-bottom: 8px;
+            border-bottom: 2px solid var(--bg-body);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .section-subtitle {
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--text-muted);
+            font-weight: 700;
+            margin: 16px 0 8px 0;
+        }
+
+        .form-group {
+            margin-bottom: 12px;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 13px;
+            font-weight: 600;
+            color: #334155;
+            margin-bottom: 4px;
+        }
+
+        .input-wrapper {
+            display: flex;
+            align-items: center;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            overflow: hidden;
+            background-color: #fff;
+            transition: border-color 0.2s;
+        }
+
+        .input-wrapper.diameter-warning {
+            border: 2px solid var(--fail-border) !important;
+            background-color: #fff5f5;
+        }
+
+        .input-wrapper:focus-within {
+            border-color: var(--primary-accent);
+        }
+
+        .input-wrapper input {
+            width: 100%;
+            padding: 8px 12px;
+            border: none;
+            outline: none;
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .input-unit {
+            background-color: #f1f5f9;
+            color: var(--text-muted);
+            padding: 8px 10px;
+            font-size: 12px;
+            font-weight: 600;
+            border-left: 1px solid var(--border-color);
+            white-space: nowrap;
+        }
+
+        .grid-2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+
+        .grid-3 {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 8px;
+        }
+
+        /* Banner Status */
+        .overall-banner {
+            padding: 16px 20px;
+            border-radius: 12px;
+            color: white;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .banner-pass {
+            background-color: #15803d;
+        }
+
+        .banner-fail {
+            background-color: #be123c;
+        }
+
+        .banner-title {
+            font-size: 18px;
+            font-weight: 800;
+        }
+
+        .banner-desc {
+            font-size: 12px;
+            opacity: 0.9;
+        }
+
+        /* Check Cards */
+        .check-item {
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 12px 14px;
+            margin-bottom: 12px;
+            background-color: #fafafa;
+            transition: all 0.2s;
+        }
+
+        .check-item.pass {
+            border-color: #bbf7d0;
+            background-color: #f0fdf4;
+        }
+
+        .check-item.fail {
+            border-color: var(--fail-border);
+            background-color: var(--fail-bg);
+        }
+
+        .check-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 6px;
+        }
+
+        .check-title {
+            font-size: 13px;
+            font-weight: 700;
+        }
+
+        .badge {
+            font-size: 11px;
+            font-weight: 800;
+            padding: 2px 8px;
+            border-radius: 4px;
+            text-transform: uppercase;
+        }
+
+        .badge-pass {
+            background-color: var(--pass-bg);
+            color: var(--pass-text);
+            border: 1px solid var(--pass-border);
+        }
+
+        .badge-fail {
+            background-color: #fecdd3;
+            color: var(--fail-text);
+            border: 1px solid var(--fail-border);
+        }
+
+        .check-values {
+            display: flex;
+            justify-content: space-between;
+            font-size: 13px;
+            font-family: monospace;
+            margin-bottom: 6px;
+        }
+
+        .warning-msg {
+            font-size: 11px;
+            font-weight: 700;
+            color: var(--fail-text);
+            margin-top: 4px;
+        }
+
+        .diameter-badge {
+            display: inline-block;
+            background-color: var(--warning-bg);
+            color: var(--warning-text);
+            font-size: 10px;
+            font-weight: 800;
+            padding: 2px 6px;
+            border-radius: 4px;
+            margin-left: 6px;
+            border: 1px solid #f59e0b;
+        }
+
+        /* Math Breakdown Table */
+        .math-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 12px;
+            font-family: monospace;
+            margin-top: 10px;
+        }
+
+        .math-table th, .math-table td {
+            padding: 8px;
+            border: 1px solid #334155;
+            text-align: left;
+        }
+
+        .math-table th {
+            background-color: #1e293b;
+            color: #94a3b8;
+        }
+
+        .math-container {
+            background-color: #0f172a;
+            color: #e2e8f0;
+            padding: 16px;
+            border-radius: 8px;
+            overflow-x: auto;
+        }
+
+        .math-row {
+            margin-bottom: 6px;
+        }
+
+        .highlight-val {
+            color: #38bdf8;
+            font-weight: bold;
+        }
+
+        .highlight-res {
+            color: #4ade80;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <header>
+            <div>
+                <h1>Pin Connection Design Calculator</h1>
+                <p>Eurocode EN 1993-1-8 Table 2 Design Criteria Verification</p>
+            </div>
+            <button class="reset-btn" onclick="resetDefaults()">Reset Default Inputs</button>
+        </header>
+
+        <div class="layout-grid">
+            
+            <!-- Left Column: Inputs -->
+            <div class="left-panel">
+                <div class="card">
+                    <div class="card-title">
+                        Input Parameters
+                        <span style="font-size: 11px; font-weight: 600; color: #0284c7;">kg &amp; kg-cm Units</span>
+                    </div>
+
+                    <form id="calcForm" onsubmit="return false;">
+                        
+                        <div class="section-subtitle">1. Applied Forces &amp; Bending Moment</div>
+                        
+                        <div class="form-group">
+                            <label for="m_ed">Bending Moment (M_Ed)</label>
+                            <div class="input-wrapper">
+                                <input type="number" id="m_ed" value="338000" step="any" oninput="calculate()">
+                                <span class="input-unit">kg-cm</span>
+                            </div>
+                        </div>
+
+                        <div class="grid-2">
+                            <div class="form-group">
+                                <label for="f_ved">Shear Force (F_v,Ed)</label>
+                                <div class="input-wrapper">
+                                    <input type="number" id="f_ved" value="169300" step="any" oninput="calculate()">
+                                    <span class="input-unit">kg</span>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label for="f_bed">Bearing Force (F_b,Ed)</label>
+                                <div class="input-wrapper">
+                                    <input type="number" id="f_bed" value="169300" step="any" oninput="calculate()">
+                                    <span class="input-unit">kg</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="section-subtitle">2. Material Strengths</div>
+
+                        <div class="grid-2">
+                            <div class="form-group">
+                                <label for="f_up">Pin Ultimate Strength (f_up)</label>
+                                <div class="input-wrapper">
+                                    <input type="number" id="f_up" value="5100" step="any" oninput="calculate()">
+                                    <span class="input-unit">kg/cm^2</span>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label for="f_yp">Pin Yield Strength (f_yp)</label>
+                                <div class="input-wrapper">
+                                    <input type="number" id="f_yp" value="3550" step="any" oninput="calculate()">
+                                    <span class="input-unit">kg/cm^2</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="f_yplate">Plate Yield Strength (f_y)</label>
+                            <div class="input-wrapper">
+                                <input type="number" id="f_yplate" value="2350" step="any" oninput="calculate()">
+                                <span class="input-unit">kg/cm^2</span>
+                            </div>
+                        </div>
+
+                        <div class="section-subtitle">3. Pin &amp; Plate Geometry</div>
+
+                        <div class="grid-2">
+                            <div class="form-group">
+                                <label for="pin_d">
+                                    Pin Diameter (d)
+                                    <span id="pinWarningBadge" class="diameter-badge" style="display:none;">TOO SMALL</span>
+                                </label>
+                                <div class="input-wrapper" id="pin_d_wrapper">
+                                    <input type="number" id="pin_d" value="100" step="any" oninput="calculate()">
+                                    <span class="input-unit">mm</span>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label for="plate_t">Plate Thickness (t)</label>
+                                <div class="input-wrapper">
+                                    <input type="number" id="plate_t" value="25" step="any" oninput="calculate()">
+                                    <span class="input-unit">mm</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="section-subtitle">4. Partial Safety Factors (Gamma_M)</div>
+
+                        <div class="grid-3">
+                            <div class="form-group">
+                                <label for="gamma_m2">Gamma_M2</label>
+                                <div class="input-wrapper">
+                                    <input type="number" id="gamma_m2" value="1.25" step="any" oninput="calculate()" style="text-align: center;">
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label for="gamma_m0">Gamma_M0</label>
+                                <div class="input-wrapper">
+                                    <input type="number" id="gamma_m0" value="1.00" step="any" oninput="calculate()" style="text-align: center;">
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label for="gamma_m6_ser">Gamma_M6,ser</label>
+                                <div class="input-wrapper">
+                                    <input type="number" id="gamma_m6_ser" value="1.00" step="any" oninput="calculate()" style="text-align: center;">
+                                </div>
+                            </div>
+                        </div>
+
+                    </form>
+                </div>
+            </div>
+
+            <!-- Right Column: Results & Analysis -->
+            <div class="right-panel">
+                
+                <!-- Overall Status Banner -->
+                <div id="overallBanner" class="overall-banner banner-pass">
+                    <div>
+                        <div id="overallTitle" class="banner-title">DESIGN SATISFACTORY</div>
+                        <div id="overallDesc" class="banner-desc">All Table 2 design requirements are satisfied.</div>
+                    </div>
+                    <div style="text-align: right; font-family: monospace;">
+                        <div style="font-size: 11px; opacity: 0.8;">MAX UTILIZATION</div>
+                        <div id="maxRatioVal" style="font-size: 24px; font-weight: 800;">0.00</div>
+                    </div>
+                </div>
+
+                <!-- Case 1: Unreplaceable Pin Checks -->
+                <div class="card">
+                    <div class="card-title">
+                        Case 1: Standard / Unreplaceable Pin Checks
+                        <span id="case1Status" class="badge badge-pass">PASS</span>
+                    </div>
+
+                    <!-- Shear Check -->
+                    <div id="card_shear" class="check-item pass">
+                        <div class="check-header">
+                            <span class="check-title">1. Shear Resistance (F_v,Rd)</span>
+                            <span id="shearBadge" class="badge badge-pass">PASS</span>
+                        </div>
+                        <div class="check-values">
+                            <span>Capacity: <strong id="f_vrd_val">0</strong> kg</span>
+                            <span>Applied: <strong id="f_ved_req">0</strong> kg</span>
+                        </div>
+                        <div id="shearWarn" class="warning-msg" style="display:none;">
+                            [!] INCREASE PIN DIAMETER (d) - Shear capacity inadequate.
+                        </div>
+                    </div>
+
+                    <!-- Bearing Check -->
+                    <div id="card_bearing" class="check-item pass">
+                        <div class="check-header">
+                            <span class="check-title">2. Bearing Resistance (F_b,Rd)</span>
+                            <span id="bearingBadge" class="badge badge-pass">PASS</span>
+                        </div>
+                        <div class="check-values">
+                            <span>Capacity: <strong id="f_brd_val">0</strong> kg</span>
+                            <span>Applied: <strong id="f_bed_req">0</strong> kg</span>
+                        </div>
+                        <div id="bearingWarn" class="warning-msg" style="display:none;">
+                            [!] INCREASE PIN DIAMETER (d) OR PLATE THICKNESS (t) - Bearing capacity inadequate.
+                        </div>
+                    </div>
+
+                    <!-- Bending Check -->
+                    <div id="card_bending" class="check-item pass">
+                        <div class="check-header">
+                            <span class="check-title">3. Bending Resistance (M_Rd)</span>
+                            <span id="bendingBadge" class="badge badge-pass">PASS</span>
+                        </div>
+                        <div class="check-values">
+                            <span>Capacity: <strong id="m_rd_val">0</strong> kg-cm</span>
+                            <span>Applied: <strong id="m_ed_req">0</strong> kg-cm</span>
+                        </div>
+                        <div id="bendingWarn" class="warning-msg" style="display:none;">
+                            [!] INCREASE PIN DIAMETER (d) - Bending resistance inadequate.
+                        </div>
+                    </div>
+
+                    <!-- Combined Interaction Check -->
+                    <div id="card_combined" class="check-item pass">
+                        <div class="check-header">
+                            <span class="check-title">4. Combined Shear &amp; Bending Interaction</span>
+                            <span id="combinedBadge" class="badge badge-pass">PASS</span>
+                        </div>
+                        <div class="check-values">
+                            <span>Interaction Ratio: <strong id="comb_ratio_val">0.00</strong></span>
+                            <span>Limit: <strong>1.00</strong></span>
+                        </div>
+                        <div id="combinedWarn" class="warning-msg" style="display:none;">
+                            [!] INCREASE PIN DIAMETER (d) - Combined interaction exceeds 1.0 limit.
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Case 2: Replaceable Pin Serviceability Checks -->
+                <div class="card">
+                    <div class="card-title">
+                        Case 2: Replaceable Pin Requirements (Serviceability)
+                        <span id="case2Status" class="badge badge-pass">PASS</span>
+                    </div>
+
+                    <!-- Service Bearing Check -->
+                    <div id="card_bearingSer" class="check-item pass">
+                        <div class="check-header">
+                            <span class="check-title">5. Replaceable Bearing Resistance (F_b,Rd,ser)</span>
+                            <span id="bearingSerBadge" class="badge badge-pass">PASS</span>
+                        </div>
+                        <div class="check-values">
+                            <span>Capacity: <strong id="f_brd_ser_val">0</strong> kg</span>
+                            <span>Applied: <strong id="f_bed_ser_req">0</strong> kg</span>
+                        </div>
+                        <div id="bearingSerWarn" class="warning-msg" style="display:none;">
+                            [!] INCREASE PIN DIAMETER (d) OR PLATE THICKNESS (t) - Service bearing capacity inadequate.
+                        </div>
+                    </div>
+
+                    <!-- Service Bending Check -->
+                    <div id="card_bendingSer" class="check-item pass">
+                        <div class="check-header">
+                            <span class="check-title">6. Replaceable Bending Resistance (M_Rd,ser)</span>
+                            <span id="bendingSerBadge" class="badge badge-pass">PASS</span>
+                        </div>
+                        <div class="check-values">
+                            <span>Capacity: <strong id="m_rd_ser_val">0</strong> kg-cm</span>
+                            <span>Applied: <strong id="m_ed_ser_req">0</strong> kg-cm</span>
+                        </div>
+                        <div id="bendingSerWarn" class="warning-msg" style="display:none;">
+                            [!] INCREASE PIN DIAMETER (d) - Service bending resistance inadequate.
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Detailed Mathematical Calculation Step-by-Step Breakdown -->
+                <div class="card" style="background-color: #0f172a; border-color: #1e293b; color: white;">
+                    <div class="card-title" style="border-bottom-color: #1e293b; color: white;">
+                        Step-by-Step Mathematical Formulas
+                    </div>
+
+                    <div class="math-container">
+                        <div class="math-row">
+                            <strong>Geometric Parameters:</strong><br>
+                            d_cm = <span id="m_d_mm"></span> mm / 10 = <span id="m_d_cm" class="highlight-val"></span> cm | 
+                            t_cm = <span id="m_t_mm"></span> mm / 10 = <span id="m_t_cm" class="highlight-val"></span> cm<br>
+                            Area (A) = pi * (<span id="m_d_cm2"></span>)^2 / 4 = <span id="m_area" class="highlight-val"></span> cm^2<br>
+                            Elastic Modulus (W_el) = pi * (<span id="m_d_cm3"></span>)^3 / 32 = <span id="m_wel" class="highlight-val"></span> cm^3<br>
+                            Lower Yield (f_y_min) = min(<span id="m_fyp"></span>, <span id="m_fplate"></span>) = <span id="m_fymin" class="highlight-val"></span> kg/cm^2
+                        </div>
+                        <hr style="border-color: #334155; margin: 10px 0;">
+                        <div class="math-row">
+                            <strong>Unreplaceable Pin Formulas:</strong><br>
+                            F_v,Rd = 0.6 * A * f_up / Gamma_M2 = <span id="m_fvrd" class="highlight-res"></span> kg<br>
+                            F_b,Rd = 1.5 * t_cm * d_cm * f_y_min / Gamma_M0 = <span id="m_fbrd" class="highlight-res"></span> kg<br>
+                            M_Rd = 1.5 * W_el * f_yp / Gamma_M0 = <span id="m_mrd" class="highlight-res"></span> kg-cm<br>
+                            Interaction = (M_Ed / M_Rd)^2 + (F_v,Ed / F_v,Rd)^2 = <span id="m_comb" class="highlight-res"></span>
+                        </div>
+                        <hr style="border-color: #334155; margin: 10px 0;">
+                        <div class="math-row">
+                            <strong>Replaceable Pin Serviceability Formulas:</strong><br>
+                            F_b,Rd,ser = 0.6 * t_cm * d_cm * f_y_min / Gamma_M6,ser = <span id="m_fbrd_ser" class="highlight-res"></span> kg<br>
+                            M_Rd,ser = 0.8 * W_el * f_yp / Gamma_M6,ser = <span id="m_mrd_ser" class="highlight-res"></span> kg-cm
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <!-- JavaScript Calculation Engine -->
+    <script>
+        const DEFAULTS = {
+            m_ed: 338000,
+            f_ved: 169300,
+            f_bed: 169300,
+            f_up: 5100,
+            f_yp: 3550,
+            f_yplate: 2350,
+            pin_d: 100,
+            plate_t: 25,
+            gamma_m2: 1.25,
+            gamma_m0: 1.00,
+            gamma_m6_ser: 1.00
+        };
+
+        function resetDefaults() {
+            document.getElementById('m_ed').value = DEFAULTS.m_ed;
+            document.getElementById('f_ved').value = DEFAULTS.f_ved;
+            document.getElementById('f_bed').value = DEFAULTS.f_bed;
+            document.getElementById('f_up').value = DEFAULTS.f_up;
+            document.getElementById('f_yp').value = DEFAULTS.f_yp;
+            document.getElementById('f_yplate').value = DEFAULTS.f_yplate;
+            document.getElementById('pin_d').value = DEFAULTS.pin_d;
+            document.getElementById('plate_t').value = DEFAULTS.plate_t;
+            document.getElementById('gamma_m2').value = DEFAULTS.gamma_m2;
+            document.getElementById('gamma_m0').value = DEFAULTS.gamma_m0;
+            document.getElementById('gamma_m6_ser').value = DEFAULTS.gamma_m6_ser;
+            calculate();
+        }
+
+        function calculate() {
+            // Read input values safely
+            const M_Ed = parseFloat(document.getElementById('m_ed').value) || 0;
+            const F_vEd = parseFloat(document.getElementById('f_ved').value) || 0;
+            const F_bEd = parseFloat(document.getElementById('f_bed').value) || 0;
+
+            const f_up = parseFloat(document.getElementById('f_up').value) || 0;
+            const f_yp = parseFloat(document.getElementById('f_yp').value) || 0;
+            const f_yplate = parseFloat(document.getElementById('f_yplate').value) || 0;
+
+            const d_mm = parseFloat(document.getElementById('pin_d').value) || 0;
+            const t_mm = parseFloat(document.getElementById('plate_t').value) || 0;
+
+            const Gamma_M2 = parseFloat(document.getElementById('gamma_m2').value) || 1.25;
+            const Gamma_M0 = parseFloat(document.getElementById('gamma_m0').value) || 1.00;
+            const Gamma_M6_ser = parseFloat(document.getElementById('gamma_m6_ser').value) || 1.00;
+
+            // Unit conversions to cm
+            const d_cm = d_mm / 10;
+            const t_cm = t_mm / 10;
+
+            // Section properties
+            const A = (Math.PI * Math.pow(d_cm, 2)) / 4;
+            const W_el = (Math.PI * Math.pow(d_cm, 3)) / 32;
+            const f_y_min = Math.min(f_yp, f_yplate);
+
+            // 1. Shear Resistance
+            const F_vRd = Gamma_M2 > 0 ? (0.6 * A * f_up) / Gamma_M2 : 0;
+
+            // 2. Unreplaceable Bearing Resistance
+            const F_bRd = Gamma_M0 > 0 ? (1.5 * t_cm * d_cm * f_y_min) / Gamma_M0 : 0;
+
+            // 3. Unreplaceable Bending Resistance
+            const M_Rd = Gamma_M0 > 0 ? (1.5 * W_el * f_yp) / Gamma_M0 : 0;
+
+            // 4. Combined Interaction Ratio
+            const ratio_m = M_Rd > 0 ? (M_Ed / M_Rd) : 0;
+            const ratio_v = F_vRd > 0 ? (F_vEd / F_vRd) : 0;
+            const combined_ratio = Math.pow(ratio_m, 2) + Math.pow(ratio_v, 2);
+
+            // 5. Replaceable Bearing Resistance (Serviceability)
+            const F_bRd_ser = Gamma_M6_ser > 0 ? (0.6 * t_cm * d_cm * f_y_min) / Gamma_M6_ser : 0;
+
+            // 6. Replaceable Bending Resistance (Serviceability)
+            const M_Rd_ser = Gamma_M6_ser > 0 ? (0.8 * W_el * f_yp) / Gamma_M6_ser : 0;
+
+            // Evaluate individual checks
+            const c1Pass = updateCheckUI('card_shear', 'shearBadge', 'f_vrd_val', 'f_ved_req', 'shearWarn', F_vRd, F_vEd);
+            const c2Pass = updateCheckUI('card_bearing', 'bearingBadge', 'f_brd_val', 'f_bed_req', 'bearingWarn', F_bRd, F_bEd);
+            const c3Pass = updateCheckUI('card_bending', 'bendingBadge', 'm_rd_val', 'm_ed_req', 'bendingWarn', M_Rd, M_Ed);
+
+            // Combined interaction UI update
+            const c4Pass = combined_ratio <= 1.0;
+            const cardCombined = document.getElementById('card_combined');
+            const badgeCombined = document.getElementById('combinedBadge');
+            const warnCombined = document.getElementById('combinedWarn');
+
+            document.getElementById('comb_ratio_val').innerText = combined_ratio.toFixed(2);
+            if (c4Pass) {
+                cardCombined.className = "check-item pass";
+                badgeCombined.className = "badge badge-pass";
+                badgeCombined.innerText = "PASS";
+                warnCombined.style.display = "none";
+            } else {
+                cardCombined.className = "check-item fail";
+                badgeCombined.className = "badge badge-fail";
+                badgeCombined.innerText = "FAIL";
+                warnCombined.style.display = "block";
+            }
+
+            // Replaceable Pin Checks UI update
+            const c5Pass = updateCheckUI('card_bearingSer', 'bearingSerBadge', 'f_brd_ser_val', 'f_bed_ser_req', 'bearingSerWarn', F_bRd_ser, F_bEd);
+            const c6Pass = updateCheckUI('card_bendingSer', 'bendingSerBadge', 'm_rd_ser_val', 'm_ed_ser_req', 'bendingSerWarn', M_Rd_ser, M_Ed);
+
+            // Summaries
+            const case1Pass = c1Pass && c2Pass && c3Pass && c4Pass;
+            const case2Pass = c5Pass && c6Pass;
+
+            updateBadge('case1Status', case1Pass);
+            updateBadge('case2Status', case2Pass);
+
+            // Pin Diameter Warning Highlight
+            const pinWarningBadge = document.getElementById('pinWarningBadge');
+            const pinDWrapper = document.getElementById('pin_d_wrapper');
+            const pinIsTooSmall = !c1Pass || !c3Pass || !c4Pass || !c6Pass;
+
+            if (pinIsTooSmall) {
+                pinWarningBadge.style.display = "inline-block";
+                pinDWrapper.classList.add('diameter-warning');
+            } else {
+                pinWarningBadge.style.display = "none";
+                pinDWrapper.classList.remove('diameter-warning');
+            }
+
+            // Overall Banner Update
+            const r1 = F_vRd > 0 ? F_vEd / F_vRd : 0;
+            const r2 = F_bRd > 0 ? F_bEd / F_bRd : 0;
+            const r3 = M_Rd > 0 ? M_Ed / M_Rd : 0;
+            const r5 = F_bRd_ser > 0 ? F_bEd / F_bRd_ser : 0;
+            const r6 = M_Rd_ser > 0 ? M_Ed / M_Rd_ser : 0;
+
+            const maxUtilization = Math.max(r1, r2, r3, combined_ratio, r5, r6);
+            document.getElementById('maxRatioVal').innerText = maxUtilization.toFixed(2);
+
+            const overallBanner = document.getElementById('overallBanner');
+            const overallTitle = document.getElementById('overallTitle');
+            const overallDesc = document.getElementById('overallDesc');
+
+            if (case1Pass && case2Pass) {
+                overallBanner.className = "overall-banner banner-pass";
+                overallTitle.innerText = "DESIGN SATISFACTORY";
+                overallDesc.innerText = "All unreplaceable and replaceable pin checks are passed.";
+            } else if (case1Pass) {
+                overallBanner.className = "overall-banner";
+                overallBanner.style.backgroundColor = "#b45309";
+                overallTitle.innerText = "UNREPLACEABLE PIN ONLY";
+                overallDesc.innerText = "Passes standard checks but fails replaceable pin serviceability criteria.";
+            } else {
+                overallBanner.className = "overall-banner banner-fail";
+                overallTitle.innerText = "INCREASE PIN DIAMETER / CAPACITY";
+                overallDesc.innerText = "Design fails one or more critical structural checks.";
+            }
+
+            // Update Math Display
+            document.getElementById('m_d_mm').innerText = d_mm;
+            document.getElementById('m_d_cm').innerText = d_cm.toFixed(2);
+            document.getElementById('m_d_cm2').innerText = d_cm.toFixed(2);
+            document.getElementById('m_d_cm3').innerText = d_cm.toFixed(2);
+            document.getElementById('m_t_mm').innerText = t_mm;
+            document.getElementById('m_t_cm').innerText = t_cm.toFixed(2);
+            document.getElementById('m_area').innerText = A.toFixed(2);
+            document.getElementById('m_wel').innerText = W_el.toFixed(2);
+            document.getElementById('m_fyp').innerText = f_yp;
+            document.getElementById('m_fplate').innerText = f_yplate;
+            document.getElementById('m_fymin').innerText = f_y_min;
+
+            document.getElementById('m_fvrd').innerText = Math.round(F_vRd).toLocaleString();
+            document.getElementById('m_fbrd').innerText = Math.round(F_bRd).toLocaleString();
+            document.getElementById('m_mrd').innerText = Math.round(M_Rd).toLocaleString();
+            document.getElementById('m_comb').innerText = combined_ratio.toFixed(2);
+
+            document.getElementById('m_fbrd_ser').innerText = Math.round(F_bRd_ser).toLocaleString();
+            document.getElementById('m_mrd_ser').innerText = Math.round(M_Rd_ser).toLocaleString();
+        }
+
+        function updateCheckUI(cardId, badgeId, valId, reqId, warnId, capacity, demand) {
+            const card = document.getElementById(cardId);
+            const badge = document.getElementById(badgeId);
+            const warn = document.getElementById(warnId);
+
+            document.getElementById(valId).innerText = Math.round(capacity).toLocaleString();
+            document.getElementById(reqId).innerText = Math.round(demand).toLocaleString();
+
+            const pass = capacity >= demand;
+            if (pass) {
+                card.className = "check-item pass";
+                badge.className = "badge badge-pass";
+                badge.innerText = "PASS";
+                if (warn) warn.style.display = "none";
+            } else {
+                card.className = "check-item fail";
+                badge.className = "badge badge-fail";
+                badge.innerText = "FAIL";
+                if (warn) warn.style.display = "block";
+            }
+            return pass;
+        }
+
+        function updateBadge(badgeId, isPass) {
+            const badge = document.getElementById(badgeId);
+            if (isPass) {
+                badge.className = "badge badge-pass";
+                badge.innerText = "PASS";
+            } else {
+                badge.className = "badge badge-fail";
+                badge.innerText = "FAIL";
+            }
+        }
+
+        // Run calculation when loaded
+        window.onload = function() {
+            calculate();
+        };
+    </script>
+</body>
+</html>
