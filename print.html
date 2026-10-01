@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Column Stability & Equivalent Inertia Summary Report</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            margin: 0;
+            padding: 40px;
+            background-color: #f4f6f9;
+            color: #222;
+            line-height: 1.6;
+        }
+        .page {
+            max-width: 800px;
+            margin: 0 auto;
+            background: #ffffff;
+            padding: 50px;
+            border-radius: 8px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+        }
+        h1 {
+            color: #003366;
+            border-bottom: 2px solid #003366;
+            padding-bottom: 10px;
+            margin-top: 0;
+            font-size: 24px;
+        }
+        h2 {
+            color: #004488;
+            margin-top: 30px;
+            font-size: 18px;
+            border-bottom: 1px solid #ddd;
+            padding-bottom: 5px;
+        }
+        p, li {
+            font-size: 14px;
+        }
+        .formula-box {
+            background-color: #f8fafc;
+            border-left: 4px solid #0056b3;
+            padding: 12px 18px;
+            margin: 15px 0;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 14px;
+        }
+        ul {
+            padding-left: 20px;
+        }
+        li {
+            margin-bottom: 8px;
+        }
+        .footer {
+            margin-top: 40px;
+            border-top: 1px solid #eee;
+            padding-top: 15px;
+            font-size: 12px;
+            color: #777;
+            text-align: center;
+        }
+        @media print {
+            body {
+                background-color: #fff;
+                padding: 0;
+            }
+            .page {
+                box-shadow: none;
+                padding: 0;
+                max-width: 100%;
+            }
+        }
+    </style>
+    <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+</head>
+<body>
+
+<div class="page">
+    <h1>Column Stability & Equivalent Inertia Summary Report</h1>
+
+    <h2>1. Overview of the Eigenvalue Formulation</h2>
+    <p>In structural stability analysis, the exact differential equation for a column under axial load \(P\) with general end restraints yields a boundary value problem. For a uniform column, the displacement function is expressed as:</p>
+    
+    <div class="formula-box">
+        $$v(z) = A + Bz + C \sin(kz) + D \cos(kz) \quad \text{where } k = \sqrt{\frac{P}{EI}}$$
+    </div>
+
+    <p>Applying boundary conditions with rotational springs (\(\alpha_T, \alpha_B\)) and translational springs (\(\beta_T, \beta_B\)) leads to the \(4 \times 4\) transcendental system determinant:</p>
+
+    <div class="formula-box">
+        $$\begin{vmatrix}
+        T_T & (kL)^2 & 0 & T_T \\
+        0 & R_T & R_T kL & (kL)^2 \\
+        T_B & [T_B - (kL)^2] & T_B \sin(kL) & T_B \cos(kL) \\
+        0 & R_B & [R_B kL \cos(kL) - (kL)^2 \sin(kL)] & [-R_B kL \sin(kL) - (kL)^2 \cos(kL)]
+        \end{vmatrix} = 0$$
+    </div>
+
+    <p>Where the dimensionless parameters are defined as:</p>
+    <div class="formula-box">
+        $$R_T = \frac{\alpha_T L}{EI}, \quad R_B = \frac{\alpha_B L}{EI}, \quad T_T = \frac{\beta_T L^3}{EI}, \quad T_B = \frac{\beta_B L^3}{EI}$$
+    </div>
+
+    <h2>2. Integration of Equivalent Inertia (\(I_{\text{eff}}\)) for Variable Section Columns</h2>
+    <p>For columns with non-uniform or variable cross-sections (e.g., tapered, haunched, or stepped columns), \(I(z)\) varies along the length \(L\). To avoid complex numerical discretization or variable-coefficient differential equations, an <b>Equivalent Inertia (\(I_{\text{eff}}\))</b> approach is integrated directly into the determinant matrix model.</p>
+
+    <h3>Step 1: Compute Equivalent Inertia (\(I_{\text{eff}}\))</h3>
+    <p>Determine \(I_{\text{eff}}\) based on the cross-section variation profile:</p>
+    <ul>
+        <li><b>Linearly Tapered I-Sections (AISC Approach):</b>
+            $$I_{\text{eff}} = C_x \cdot I_{\text{min}}$$
+            where \(C_x = 1.0 + 0.08\gamma + 0.8\gamma^2\) and \(\gamma = \frac{d_{\text{max}}}{d_{\text{min}}} - 1\).
+        </li>
+        <li><b>Stepped Columns:</b>
+            $$I_{\text{eff}} \approx I_1 \left(\frac{a}{L}\right) + I_2 \left(\frac{b}{L}\right)$$
+        </li>
+    </ul>
+
+    <h3>Step 2: Update Dimensionless Ratios</h3>
+    <p>Substitute \(I_{\text{eff}}\) into all boundary stiffness ratios:</p>
+    <div class="formula-box">
+        $$R_T = \frac{\alpha_T L}{E I_{\text{eff}}}, \quad R_B = \frac{\alpha_B L}{E I_{\text{eff}}}$$
+        $$T_T = \frac{\beta_T L^3}{E I_{\text{eff}}}, \quad T_B = \frac{\beta_B L^3}{E I_{\text{eff}}}$$
+    </div>
+
+    <h3>Step 3: Solve for Eigenvalue \(kL\)</h3>
+    <p>Find the non-trivial root \(kL\) that satisfies \(\det[M(kL)] = 0\). The physical parameter \(k\) is defined in terms of \(I_{\text{eff}}\):</p>
+    <div class="formula-box">
+        $$k = \sqrt{\frac{P}{E I_{\text{eff}}}}$$
+    </div>
+
+    <h3>Step 4: Calculate Critical Buckling Load (\(P_{\text{cr}}\)) & Effective Length (\(K\))</h3>
+    <p>Once \(kL\) is obtained, calculate the critical buckling load:</p>
+    <div class="formula-box">
+        $$P_{\text{cr}} = \frac{(kL)^2 E I_{\text{eff}}}{L^2}$$
+    </div>
+    <p>The effective length factor \(K\) relates directly to the eigenvalue \(kL\) by:</p>
+    <div class="formula-box">
+        $$K = \frac{\pi}{kL}$$
+    </div>
+
+    <div class="footer">
+        Structural Stability & Elastic Buckling Analysis Reference
+    </div>
+</div>
+
+</body>
+</html>
